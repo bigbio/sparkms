@@ -1,2 +1,2 @@
-# pyLFQ
+# sparkMS
 Package to compute absolute quantification values of proteomics LFQ samples
