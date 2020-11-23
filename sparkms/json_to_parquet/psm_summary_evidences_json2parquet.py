@@ -28,7 +28,7 @@ def main():
             if df.rdd.isEmpty():
                 continue
 
-            df.write.parquet(out_path, mode='append', partitionBy=['projectAccession', 'assayAccession'])
+            df.write.parquet(out_path + '/psms', mode='append', partitionBy=['projectAccession', 'assayAccession'])
         except Exception as e:
             print("** Error while processing: " + f)
             print(e)
