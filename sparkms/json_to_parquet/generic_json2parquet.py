@@ -5,16 +5,20 @@ import argparse
 import sys
 import os
 
-def main():
+def parge_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('-i', '--input', help="Input josn files. ie., /path/to/abc.json or  /path/to/*", required=True)
     parser.add_argument("-o", "--output", help="Output path to store parquets. ie., /out/path", required=True)
     args = parser.parse_args()
     input_path = args.input
     out_path = args.output
+    return input_path, out_path
 
+
+def main():
+    input_path, out_path = parge_args()
     if not os.path.isdir(out_path):
-        print('The output_path specified does not exist')
+        print('The output_path specified does not exist: ' + out_path)
         sys.exit(1)
 
     sc = SparkContext.getOrCreate()
@@ -28,7 +32,7 @@ def main():
             if df.rdd.isEmpty():
                 continue
 
-            df.write.parquet(out_path + '/proteins', mode='append', partitionBy=['projectAccession', 'assayAccession'])
+            df.write.parquet(out_path, mode='append', partitionBy=['projectAccession', 'assayAccession'])
         except Exception as e:
             print("** Error while processing: " + f)
             print(e)
