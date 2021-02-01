@@ -1,22 +1,14 @@
+import click
 from pyspark.sql import SparkSession
 import glob
-import argparse
 import sys
 import os
 
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-I', '--input', help="Input josn files. ie., /path/to/abc.json or  /path/to/*", required=True)
-    parser.add_argument("-O", "--output", help="Output path to store parquets. ie., /out/path", required=True)
-    args = parser.parse_args()
-    input_path = args.input
-    out_path = args.output
-    return input_path, out_path
-
-
-def main():
-    input_path, out_path = parse_args()
+@click.command()
+@click.option('-I', '--input-path', help="Input josn files. ie., /path/to/abc.json or /path/to/*", required=True)
+@click.option('-O', '--out-path', help="Output path to store parquets. ie., /out/path", required=True)
+def main(input_path, out_path):
     if not os.path.isdir(out_path):
         print('The output_path specified does not exist: ' + out_path)
         sys.exit(1)
