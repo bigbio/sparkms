@@ -1,4 +1,4 @@
-# sparkMS
+# sparkms
 
 PySpark package for analysis of proteomics big data.
 
@@ -21,5 +21,5 @@ https://github.com/bigbio/sparkms/issues
 
 ## Contributing
 
-Contributing to this repo should be done in the dev branch.
+Contributing to this repo should be done in the [dev branch](https://github.com/bigbio/sparkms/tree/dev).
 
