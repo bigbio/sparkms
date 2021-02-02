@@ -1,0 +1,10 @@
+# You can use this file to create a conda environment for this pipeline:
+#   conda env create -f environment.yml
+name: sparkms
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - conda-forge::python=3.7
+  - conda-forge::pyspark
