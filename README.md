@@ -19,4 +19,7 @@ The sparkms package allows to perform data analysis of MS-based proteomics data 
 
 https://github.com/bigbio/sparkms/issues
 
+## Contributing
+
+Contributing to this repo should be done in the dev branch.
 

@@ -6,7 +6,7 @@ import os
 
 
 @click.command()
-@click.option('-I', '--input-path', help="Input josn files. ie., /path/to/abc.json or /path/to/*", required=True)
+@click.option('-I', '--input-path', help="Input json files. ie., /path/to/abc.json or /path/to/*", required=True)
 @click.option('-O', '--out-path', help="Output path to store parquets. ie., /out/path", required=True)
 def main(input_path, out_path):
     if not os.path.isdir(out_path):
