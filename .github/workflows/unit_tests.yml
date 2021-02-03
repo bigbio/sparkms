@@ -1,0 +1,31 @@
+name: Unit testing workflow
+
+on:
+  push:
+    branches:
+      - '*'
+
+jobs:
+  build_and_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - uses: actions/setup-java@v1
+        with:
+          java-version: '8'
+      - uses: vemonet/setup-spark@v1
+        with:
+          spark-version: '3.0.1'
+      - run: spark-submit --version
+      - name: install requirements
+        run: |
+          pip3 install -r sparkms/requirements.txt
+          pip3 install -r tests/requirements.txt
+      - name: Run tests
+        run: |
+          cd tests/
+          ls
+          pytest json_to_parquet_test.py
