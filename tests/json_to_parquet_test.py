@@ -4,7 +4,7 @@ import time
 import pytest
 from click.testing import CliRunner
 from pyarrow import parquet
-from sparkms.json_to_parquet.generic_json2parquet import main
+from sparkms.commands.json_to_parquet import json_to_parquet
 
 
 @pytest.fixture(scope="module")
@@ -17,7 +17,7 @@ def test_psm_parquet(runner):
     reference_out_file = 'resources/sample_output/psm'
     out_path = 'tmp' + str(round(time.time()))
     os.mkdir(out_path)
-    runner.invoke(main, ['-I', input_file, '-O', out_path])
+    runner.invoke(json_to_parquet, ['-I', input_file, '-O', out_path])
     generated_out = parquet.read_table(out_path)
     reference_out = parquet.read_table(reference_out_file)
     shutil.rmtree(out_path)
@@ -29,7 +29,7 @@ def test_peptide_parquet(runner):
     reference_out_file = 'resources/sample_output/peptide'
     out_path = 'tmp' + str(round(time.time()))
     os.mkdir(out_path)
-    runner.invoke(main, ['-I', input_file, '-O', out_path])
+    runner.invoke(json_to_parquet, ['-I', input_file, '-O', out_path])
     generated_out = parquet.read_table(out_path)
     reference_out = parquet.read_table(reference_out_file)
     shutil.rmtree(out_path)
@@ -41,7 +41,7 @@ def test_protein_parquet(runner):
     reference_out_file = 'resources/sample_output/protein'
     out_path = 'tmp' + str(round(time.time()))
     os.mkdir(out_path)
-    runner.invoke(main, ['-I', input_file, '-O', out_path])
+    runner.invoke(json_to_parquet, ['-I', input_file, '-O', out_path])
     generated_out = parquet.read_table(out_path)
     reference_out = parquet.read_table(reference_out_file)
     shutil.rmtree(out_path)

@@ -5,10 +5,10 @@ import sys
 import os
 
 
-@click.command()
+@click.command('json-to-parquet', short_help='Command to convert to Json files to Parquet')
 @click.option('-I', '--input-path', help="Input josn files. ie., /path/to/abc.json or /path/to/*", required=True)
 @click.option('-O', '--out-path', help="Output path to store parquets. ie., /out/path", required=True)
-def main(input_path, out_path):
+def json_to_parquet(input_path, out_path):
     if not os.path.isdir(out_path):
         print('The output_path specified does not exist: ' + out_path)
         sys.exit(1)
@@ -27,7 +27,3 @@ def main(input_path, out_path):
         except Exception as e:
             print("** Error while processing: " + f)
             print(e)
-
-
-if __name__ == "__main__":
-    main()
