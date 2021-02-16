@@ -1,5 +1,6 @@
 # Peptide information
 USI = 'usi'
+PX_PROJECT_ACCESSION  = 'px accession' #assay accession
 PEPTIDE = 'peptide sequence'
 MODIFIED_PEPTIDE = 'modified peptide sequence'
 PROTEINS = 'protein id' #array
@@ -16,7 +17,6 @@ IS_DECOY = 'isdecoy'
 
 # Sample information
 SAMPLE_ID = 'sample iD' #skip
-PX_PROJECT_ACCESSION  = 'px accession' #assay accession
 ORGANISM = 'organism'
 ORGANISM_PART = 'organism part'
 DISEASE = 'disease'
