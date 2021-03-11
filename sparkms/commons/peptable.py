@@ -1,5 +1,8 @@
 # Peptide information
+from pandas import DataFrame
 from pyspark.sql.types import *
+import pandas as pd
+
 
 HEADER_PEPTIDE = 'peptide sequence'
 HEADER_NO_PSM = '# psms'
@@ -24,10 +27,33 @@ HEADER_ORGANISM_PART = 'organism part'
 HEADER_DISEASE = 'disease'
 HEADER_CELL_LINE = 'cell line'
 
-PeptideTableSchema = StructType([
+SparkPeptideTableSchema = StructType([
   StructField(HEADER_PEPTIDE, StringType(), True),
   StructField(HEADER_NO_PSM, IntegerType(), True),
   StructField(HEADER_INTENSITY, FloatType(), True),
   StructField(HEADER_IS_DECOY, IntegerType(), True),
-  StructField(HEADER_PROTEIN, ArrayType(StructType), True)
+  StructField(HEADER_PROTEIN, ArrayType(StringType()), True)
 ])
+
+
+def mztab_to_dataframe(mztab_df: DataFrame = None) -> DataFrame:
+  """
+  This function converts and mzTab to a peptidetable
+  :param mztab_df: MzTab DataFrame
+  :return:
+  """
+
+  # Iterate over input dataframe rows and individual years
+  seq_list = []
+  protein_id_list = []
+  for row in mztab_df.peptide_table.itertuples():
+    seq_list.append(row.sequence)
+    protein_id_list.append(row.accession)
+
+  return pd.DataFrame({HEADER_PEPTIDE: seq_list,
+                       HEADER_PROTEIN: protein_id_list,
+  })
+
+
+
+
