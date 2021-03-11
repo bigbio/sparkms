@@ -1,4 +1,6 @@
 # Peptide information
+from pyspark.sql.types import *
+
 HEADER_PEPTIDE = 'peptide sequence'
 HEADER_NO_PSM = '# psms'
 HEADER_PROTEIN = 'protein id' #could be array
@@ -21,3 +23,11 @@ HEADER_ORGANISM = 'organism'
 HEADER_ORGANISM_PART = 'organism part'
 HEADER_DISEASE = 'disease'
 HEADER_CELL_LINE = 'cell line'
+
+PeptideTableSchema = StructType([
+  StructField(HEADER_PEPTIDE, StringType(), True),
+  StructField(HEADER_NO_PSM, IntegerType(), True),
+  StructField(HEADER_INTENSITY, FloatType(), True),
+  StructField(HEADER_IS_DECOY, IntegerType(), True),
+  StructField(HEADER_PROTEIN, ArrayType(StructType), True)
+])

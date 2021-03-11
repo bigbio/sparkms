@@ -8,3 +8,4 @@ channels:
 dependencies:
   - conda-forge::python=3.7
   - conda-forge::pyspark
+  - bioconda::msstitch
