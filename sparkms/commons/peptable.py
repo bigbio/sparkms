@@ -3,25 +3,26 @@ from pandas import DataFrame
 from pyspark.sql.types import *
 import pandas as pd
 
-
 HEADER_PEPTIDE = 'peptide sequence'
+HEADER_PEPTIDOFORM = 'peptidoform sequence'
 HEADER_NO_PSM = '# psms'
-HEADER_PROTEIN = 'protein id' #could be array
-HEADER_GENE = 'gene' # not yet
-HEADER_GENE_NAME = 'gene name' # not yet
+HEADER_PROTEIN = 'protein id'  # could be array
+HEADER_GENE = 'gene'  # not yet
+HEADER_GENE_NAME = 'gene name'  # not yet
 
 # Mass spec information
-HEADER_INTENSITY = 'intensity' # not yet
-HEADER_ID_SCORE = 'id score' # not yet
-HEADER_MS_RUN = 'ms-run' # not yet
-HEADER_MS_SCAN = 'ms-scan' # not yet
-HEADER_MS_RT = "rt" # not yet
+HEADER_INTENSITY = 'intensity'  # not yet
+HEADER_ID_SCORE = 'id score'  # not yet
+HEADER_MS_RUN = 'ms-run'  # not yet
+HEADER_MS_SCAN = 'ms-scan'  # not yet
+HEADER_MS_RT = "rt"  # not yet
 HEADER_MS_CHARGE = "charge"
 HEADER_IS_DECOY = 'isdecoy'
+HEADER_MASS_TO_CHARGE = 'mass to charge'
 
 # Sample information
 HEADER_SAMPLE_ID = 'sample iD'
-HEADER_PX_PROJECT_ACCESSION  = 'px accession'
+HEADER_PX_PROJECT_ACCESSION = 'px accession'
 HEADER_ORGANISM = 'organism'
 HEADER_ORGANISM_PART = 'organism part'
 HEADER_DISEASE = 'disease'
@@ -43,17 +44,11 @@ def mztab_to_dataframe(mztab_df: DataFrame = None) -> DataFrame:
   :return:
   """
 
-  # Iterate over input dataframe rows and individual years
-  seq_list = []
-  protein_id_list = []
-  for row in mztab_df.peptide_table.itertuples():
-    seq_list.append(row.sequence)
-    protein_id_list.append(row.accession)
+  result_df = mztab_df.peptide_table[['sequence', 'opt_global_cv_MS:1000889_peptidoform_sequence','accession',
+                                      'charge', 'mass_to_charge', 'opt_global_cv_MS:1002217_decoy_peptide']].copy()
 
-  return pd.DataFrame({HEADER_PEPTIDE: seq_list,
-                       HEADER_PROTEIN: protein_id_list,
-  })
+  result_df = result_df.rename(columns={"sequence": HEADER_PEPTIDE, "accession": HEADER_PROTEIN,
+                            'opt_global_cv_MS:1000889_peptidoform_sequence': HEADER_PEPTIDOFORM, 'charge': HEADER_MS_CHARGE,
+                            'mass_to_charge': HEADER_MASS_TO_CHARGE, 'opt_global_cv_MS:1002217_decoy_peptide': HEADER_IS_DECOY})
 
-
-
-
+  return result_df
