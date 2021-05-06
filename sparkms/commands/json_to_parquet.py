@@ -6,7 +6,6 @@ import os
 
 from pyspark.sql.functions import length, col
 
-
 @click.command('json-to-parquet', short_help='Command to convert to Json files to Parquet')
 @click.option('-i', '--input-path', help="Input json files. ie., /path/to/abc.json or /path/to/*", required=True)
 @click.option('-o', '--out-path', help="Output path to store parquets. ie., /out/path", required=True)
