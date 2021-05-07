@@ -4,7 +4,7 @@ import time
 import pytest
 from click.testing import CliRunner
 from pyarrow import parquet
-from sparkms.commands.json_to_parquet import json_to_parquet
+from sparkms.commands.converters.json_to_parquet import json_to_parquet
 
 
 @pytest.fixture(scope="module")

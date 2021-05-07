@@ -9,9 +9,9 @@ This is the main tool that give access to all commands and options provided by t
 """
 import click
 
-from sparkms.commands.json_to_parquet import json_to_parquet
+from sparkms.commands.converters.json_to_parquet import json_to_parquet
 
-from sparkms.commands.psm_table import psm_table
+from sparkms.commands.converters.psm_table import psm_table
 
 CONTEXT_SETTINGS = dict(help_option_names=['-h', '--help'])
 
