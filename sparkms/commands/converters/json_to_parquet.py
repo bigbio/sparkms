@@ -6,6 +6,9 @@ import os
 
 from pyspark.sql.functions import length, col
 
+from sparkms.commons import Fields
+
+
 @click.command('json-to-parquet', short_help='Command to convert to Json files to Parquet')
 @click.option('-i', '--input-path', help="Input json files. ie., /path/to/abc.json or /path/to/*", required=True)
 @click.option('-o', '--out-path', help="Output path to store parquets. ie., /out/path", required=True)
@@ -34,8 +37,8 @@ def json_to_parquet(input_path, out_path, peptide_length):
       df = sql_context.read.json(f)
       if df.rdd.isEmpty():
         continue
-      df = df.filter(length(col("peptideSequence")) > peptide_length)
-      df.write.parquet(out_path, mode='append', partitionBy=['peptideSequence', 'organism'],
+      df = df.filter(length(col(Fields.ANNOTATED_SPECTRUM_PEPTIDE_SEQUENCE)) > peptide_length)
+      df.write.parquet(out_path, mode='append', partitionBy=[Fields.ANNOTATED_SPECTRUM_PEPTIDE_SEQUENCE, Fields.ANNOTATED_SPECTRUM_ORGANISM],
                        compression='snappy')
     except Exception as e:
       print("** Error while processing: " + f)
