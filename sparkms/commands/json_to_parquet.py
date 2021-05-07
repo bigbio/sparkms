@@ -16,8 +16,9 @@ def json_to_parquet(input_path, out_path, peptide_length):
         sys.exit(1)
 
     sql_context = SparkSession.builder.getOrCreate()
-    #files = [glob.glob(input_path) for _ in ['*.json']]
     files  = [f for f in glob.glob(input_path) if f.endswith('.json')]
+    if (len(files)== 0)
+      raise RuntimeError("The files provided should be json extension")
 
     for f in files:
         try:
