@@ -18,4 +18,12 @@ def peptide_summary(input_path, out_json):
   peptides_groups = df_peptides.groupBy(ANNOTATED_SPECTRUM_PEPTIDE_SEQUENCE, ANNOTATED_SPECTRUM_ORGANISM).
 
 
-
+Group by:
+   PeptideSequence
+   proteinAccession
+Properties:
+   Best Search engine Score: Lowest ({"@type":"CvParam","cvLabel":"MS","accession":"MS:1002360","name":"distinct peptide-level FDRScore","value":"0.00026"})
+   Best PSM: first usi in the list of that peptide
+   List<ProjectAccessions>
+   Number of Observations: Number of PSMs
+   Map<PTMS+Position, List<PRojectAccession>>
