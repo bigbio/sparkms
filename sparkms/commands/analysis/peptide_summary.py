@@ -7,7 +7,7 @@ from pyspark.sql.functions import col
 from pyspark.sql.functions import size
 from pyspark.sql.functions import struct
 from pyspark.sql.functions import map_from_entries
-from sparkms.commons import Fields, psmtable
+from sparkms.commons import Fields
 
 
 @click.command('psm_table', short_help='')
@@ -116,6 +116,8 @@ def peptide_summary(psm, pep, out_path):
         .select(df_pep_summary3.peptideSequence, df_pep_summary3.proteinAccession, Fields.EXTERNAL_PROJECT_ACCESSIONS,
                 'best_search_engine_score', 'psms_count', 'best_usis', 'ptms_map')
     df_pep_summary4.show(truncate=False)
+
+    df_pep_summary4.write.parquet(out_path, mode='append', compression='snappy')
 
 
 if __name__ == '__main__':
