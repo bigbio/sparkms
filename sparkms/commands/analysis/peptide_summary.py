@@ -10,7 +10,7 @@ from pyspark.sql.functions import map_from_entries
 from sparkms.commons import Fields
 
 
-@click.command('psm_table', short_help='')
+@click.command('peptide_summary', short_help='')
 @click.option('-psm', help="Input psm parquet files. ie., /path/to/", required=True)
 @click.option('-pep', help="Input peptide parquet files. ie., /path/to/", required=True)
 @click.option('-O', '--out-path', help="Output path to store parquets. ie., /out/path", required=True)
