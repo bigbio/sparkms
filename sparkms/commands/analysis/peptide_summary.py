@@ -259,7 +259,7 @@ def peptide_summary(psm, pep, out_path):
                 'best_search_engine_score', 'psms_count', 'best_usis', 'ptms_map')
 
     df_pep_summary4.write.parquet(out_path, mode='append', compression='snappy')
-    df_pep_summary4.show(truncate=False)
+    # df_pep_summary4.show(truncate=False)
 
 
 if __name__ == '__main__':
