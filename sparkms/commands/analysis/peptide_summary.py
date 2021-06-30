@@ -10,6 +10,10 @@ from pyspark.sql.functions import length
 from pyspark.sql.functions import map_from_entries
 
 from typing import Final
+
+from pyspark.sql.types import StringType
+
+
 class Fields:
     ID: Final = "id"
     ACCESSION: Final = "accession"
@@ -244,6 +248,8 @@ def peptide_summary(psm, pep, out_path):
         .agg(functions.collect_set(Fields.EXTERNAL_PROJECT_ACCESSION))\
         .toDF(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION, 'ptms', 'project_accessions')
     # df_pep_ptm3.show(truncate=False)
+
+    df_pep_ptm3 = df_pep_ptm3.withColumn('ptms', df_pep_ptm3['ptms'].cast(StringType()))
 
     df_pep_ptm4 = df_pep_ptm3.groupby(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION) \
         .agg(functions.collect_set(struct('ptms','project_accessions')))\
