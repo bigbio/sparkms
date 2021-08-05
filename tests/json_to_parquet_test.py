@@ -17,7 +17,8 @@ def test_psm_parquet(runner):
     reference_out_file = 'resources/sample_parquets/psm'
     out_path = 'tmp' + str(round(time.time()))
     os.mkdir(out_path)
-    runner.invoke(json_to_parquet, ['-I', input_file, '-O', out_path])
+    result = runner.invoke(json_to_parquet, ['-i', input_file, '-o', out_path])
+    print(result)
     generated_out = parquet.read_table(out_path)
     reference_out = parquet.read_table(reference_out_file)
     shutil.rmtree(out_path)
@@ -29,7 +30,7 @@ def test_peptide_parquet(runner):
     reference_out_file = 'resources/sample_parquets/peptide'
     out_path = 'tmp' + str(round(time.time()))
     os.mkdir(out_path)
-    runner.invoke(json_to_parquet, ['-I', input_file, '-O', out_path])
+    runner.invoke(json_to_parquet, ['-i', input_file, '-o', out_path])
     generated_out = parquet.read_table(out_path)
     reference_out = parquet.read_table(reference_out_file)
     shutil.rmtree(out_path)
@@ -41,7 +42,7 @@ def test_protein_parquet(runner):
     reference_out_file = 'resources/sample_parquets/protein'
     out_path = 'tmp' + str(round(time.time()))
     os.mkdir(out_path)
-    runner.invoke(json_to_parquet, ['-I', input_file, '-O', out_path])
+    runner.invoke(json_to_parquet, ['-i', input_file, '-o', out_path])
     generated_out = parquet.read_table(out_path)
     reference_out = parquet.read_table(reference_out_file)
     shutil.rmtree(out_path)
