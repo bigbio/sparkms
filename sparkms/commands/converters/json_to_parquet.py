@@ -2,6 +2,8 @@ import click
 from pyspark.sql import SparkSession
 import glob
 
+from sparkms.commands.analysis.peptide_summary import Fields
+
 
 @click.command('json-to-parquet', short_help='Command to convert to Json files to Parquet')
 @click.option('-i', '--input-path', help="Input json files. ie., /path/to/abc.json or /path/to/*", required=True)
@@ -28,7 +30,7 @@ def json_to_parquet(input_path, out_path):
       if df.rdd.isEmpty():
         continue
 
-      df.write.parquet(out_path, mode='append', partitionBy=['projectAccession', 'assayAccession'],
+      df.write.parquet(out_path, mode='append', partitionBy=[Fields.EXTERNAL_PROJECT_ACCESSION, Fields.ASSAY_ACCESSION],
                        compression='snappy')
 
     except Exception as e:
