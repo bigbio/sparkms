@@ -4,7 +4,7 @@ import time
 import pytest
 from click.testing import CliRunner
 from pyarrow import parquet
-from sparkms.json_to_parquet.generic_json2parquet import main
+from sparkms.commands.converters.json_to_parquet import json_to_parquet
 
 
 @pytest.fixture(scope="module")
@@ -13,11 +13,12 @@ def runner():
 
 
 def test_psm_parquet(runner):
-    input_file = 'resources/sample_input/PXD002681_56166_PrideMongoPsmSummaryEvidence.json'
-    reference_out_file = 'resources/sample_output/psm'
-    out_path = '/tmp/' + str(round(time.time()))
+    input_file = 'resources/sample_jsons/PXD002681_56166_PrideMongoPsmSummaryEvidence.json'
+    reference_out_file = 'resources/sample_parquets/psm'
+    out_path = 'tmp' + str(round(time.time()))
     os.mkdir(out_path)
-    runner.invoke(main, ['-I', input_file, '-O', out_path])
+    result = runner.invoke(json_to_parquet, ['-i', input_file, '-o', out_path])
+    print(result)
     generated_out = parquet.read_table(out_path)
     reference_out = parquet.read_table(reference_out_file)
     shutil.rmtree(out_path)
@@ -25,11 +26,11 @@ def test_psm_parquet(runner):
 
 
 def test_peptide_parquet(runner):
-    input_file = 'resources/sample_input/PXD002681_56166_PrideMongoPeptideEvidence.json'
-    reference_out_file = 'resources/sample_output/peptide'
-    out_path = '/tmp/' + str(round(time.time()))
+    input_file = 'resources/sample_jsons/PXD002681_56166_PrideMongoPeptideEvidence.json'
+    reference_out_file = 'resources/sample_parquets/peptide'
+    out_path = 'tmp' + str(round(time.time()))
     os.mkdir(out_path)
-    runner.invoke(main, ['-I', input_file, '-O', out_path])
+    runner.invoke(json_to_parquet, ['-i', input_file, '-o', out_path])
     generated_out = parquet.read_table(out_path)
     reference_out = parquet.read_table(reference_out_file)
     shutil.rmtree(out_path)
@@ -37,11 +38,12 @@ def test_peptide_parquet(runner):
 
 
 def test_protein_parquet(runner):
-    input_file = 'resources/sample_input/PXD002681_56166_PrideMongoProteinEvidence.json'
-    reference_out_file = 'resources/sample_output/protein'
-    out_path = '/tmp/' + str(round(time.time()))
+    input_file = 'resources/sample_jsons/PXD002681_56166_PrideMongoProteinEvidence.json'
+    reference_out_file = 'resources/sample_parquets/protein'
+    out_path = 'tmp' + str(round(time.time()))
     os.mkdir(out_path)
-    runner.invoke(main, ['-I', input_file, '-O', out_path])
+    result = runner.invoke(json_to_parquet, ['-i', input_file, '-o', out_path])
+    print(result)
     generated_out = parquet.read_table(out_path)
     reference_out = parquet.read_table(reference_out_file)
     shutil.rmtree(out_path)

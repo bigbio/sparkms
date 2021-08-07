@@ -13,7 +13,7 @@ HEADER_IS_DECOY = 'isdecoy'
 
 # Sample information
 HEADER_SAMPLE_ID = 'sample iD'
-HEADER_PX_PROJECT_ACCESSION  = 'px accession'
+HEADER_PX_PROJECT_ACCESSION = 'px accession'
 HEADER_ORGANISM = 'organism'
 HEADER_ORGANISM_PART = 'organism part'
 HEADER_DISEASE = 'disease'
