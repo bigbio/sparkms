@@ -1,12 +1,10 @@
 import unittest
-from pyteomics import mztab
 
-from sparkms.commons.peptable import mztab_to_dataframe
+from pyteomics import mztab
 
 
 class TestPSM2Peptable(unittest.TestCase):
-  path_mztab1= 'resources/PXD005942-Sample-25-out.mzTab'
-
+  path_mztab1 = 'resources/PXD005942-Sample-25-out.mzTab'
 
   def test_mztab_to_dataframe(self):
     reader_mztab1 = mztab.MzTab(self.path_mztab1)

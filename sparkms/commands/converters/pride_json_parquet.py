@@ -38,7 +38,8 @@ def json_to_parquet(input_path, out_path, peptide_length):
       if df.rdd.isEmpty():
         continue
       df = df.filter(length(col(Fields.ANNOTATED_SPECTRUM_PEPTIDE_SEQUENCE)) > peptide_length)
-      df.write.parquet(out_path, mode='append', partitionBy=[Fields.ANNOTATED_SPECTRUM_PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION],
+      df.write.parquet(out_path, mode='append',
+                       partitionBy=[Fields.ANNOTATED_SPECTRUM_PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION],
                        compression='snappy')
     except Exception as e:
       print("** Error while processing: " + f)

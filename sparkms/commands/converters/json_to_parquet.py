@@ -14,7 +14,6 @@ def json_to_parquet(input_path, out_path):
   allows to filter peptides by length.
   :param input_path: input path (folder) including all json files.
   :param out_path: folder where the parquet files will be generated
-  :param peptide_length: peptide length to filter the peptides (default = 5)
   :return:
   """
 
@@ -39,4 +38,4 @@ def json_to_parquet(input_path, out_path):
 
 
 if __name__ == "__main__":
-    json_to_parquet()
+  json_to_parquet()

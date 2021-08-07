@@ -4,8 +4,9 @@ from setuptools import setup, find_packages
 
 
 def readme():
-    with open('README.md') as f:
-        return f.read()
+  with open('README.md') as f:
+    return f.read()
+
 
 setup(name='sparkms',
       version='0.0.1',
@@ -21,8 +22,8 @@ setup(name='sparkms',
       scripts=['sparkms/sparkmscli.py'],
       packages=find_packages(),
       entry_points={
-           'console_scripts': [
-             'sparkms = sparkms.sparkmscli:main'
-      ]},
-      package_data={'sparkms':['config/*.yaml', 'config/*.json']},
+        'console_scripts': [
+          'sparkms = sparkms.sparkmscli:main'
+        ]},
+      package_data={'sparkms': ['config/*.yaml', 'config/*.json']},
       zip_safe=False)

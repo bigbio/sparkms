@@ -1,9 +1,7 @@
 # Peptide information
-from typing import List
 
 from pandas import DataFrame
 from pyspark.sql.types import *
-import pandas as pd
 
 # Peptide information
 HEADER_PEPTIDE = 'peptide sequence'
@@ -14,7 +12,6 @@ HEADER_PROTEIN = 'protein id'  # could be array
 HEADER_GENE = 'gene'  # not yet
 HEADER_GENE_NAME = 'gene name'  # not yet
 HEADER_INTENSITY = 'intensity'  # not yet
-
 
 # Mass spec information
 HEADER_Q_VALUE = 'q-value'
@@ -52,6 +49,7 @@ def change_ms_run(row, list_msruns: None):
     return row['ingredient_method'][0]
   return None
 
+
 def mztab_to_dataframe(mztab_df: DataFrame = None) -> DataFrame:
   """
   This function converts and mzTab to a peptidetable
@@ -59,25 +57,26 @@ def mztab_to_dataframe(mztab_df: DataFrame = None) -> DataFrame:
   :return:
   """
 
-  result_df = mztab_df.peptide_table[['sequence', 'opt_global_cv_MS:1000889_peptidoform_sequence','accession',
-                                      'modifications', 'opt_global_q-value','opt_global_Posterior_Error_Probability_score',
+  result_df = mztab_df.peptide_table[['sequence', 'opt_global_cv_MS:1000889_peptidoform_sequence', 'accession',
+                                      'modifications', 'opt_global_q-value',
+                                      'opt_global_Posterior_Error_Probability_score',
                                       'charge', 'mass_to_charge', 'peptide_abundance_study_variable[1]',
-                                      'opt_global_feature_id','opt_global_cv_MS:1002217_decoy_peptide',
+                                      'opt_global_feature_id', 'opt_global_cv_MS:1002217_decoy_peptide',
                                       'retention_time',
                                       'retention_time_window', 'spectra_ref']].copy()
 
   result_df = result_df.rename(columns={"sequence": HEADER_PEPTIDE, "accession": HEADER_PROTEIN,
                                         'opt_global_cv_MS:1000889_peptidoform_sequence': HEADER_PEPTIDOFORM,
                                         'peptide_abundance_study_variable[1]': HEADER_INTENSITY,
-                                        'opt_global_q-value':HEADER_Q_VALUE,
-                                        'opt_global_Posterior_Error_Probability_score':HEADER_PEP,
+                                        'opt_global_q-value': HEADER_Q_VALUE,
+                                        'opt_global_Posterior_Error_Probability_score': HEADER_PEP,
                                         'opt_global_feature_id': HEADER_FEATURE_ID,
                                         'charge': HEADER_MS_CHARGE, 'mass_to_charge': HEADER_MASS_TO_CHARGE,
                                         'retention_time': HEADER_MS_RT, 'retention_time_window': HEADER_MS_RT_WINDOW,
                                         'opt_global_cv_MS:1002217_decoy_peptide': HEADER_IS_DECOY,
                                         'spectra_ref': HEADER_MS_SPECTRA_REF})
 
-  list_msruns = { k: v for k, v in mztab_df.metadata.items() if ('ms_run' in k and 'location' in k)}
-  result_df[HEADER_MS_SPECTRA_REF] = result_df.apply(change_ms_run, list_msruns = list_msruns)
+  list_msruns = {k: v for k, v in mztab_df.metadata.items() if ('ms_run' in k and 'location' in k)}
+  result_df[HEADER_MS_SPECTRA_REF] = result_df.apply(change_ms_run, list_msruns=list_msruns)
 
   return result_df

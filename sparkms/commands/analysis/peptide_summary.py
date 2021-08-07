@@ -1,16 +1,13 @@
-import os
-import sys
-import click
-from pyspark.sql import SparkSession, functions
-from pyspark.sql.functions import explode
-from pyspark.sql.functions import col
-from pyspark.sql.functions import size
-from pyspark.sql.functions import struct
-from pyspark.sql.functions import length
-from pyspark.sql.functions import map_from_entries
-
 from typing import Final
 
+import click
+from pyspark.sql import SparkSession, functions
+from pyspark.sql.functions import col
+from pyspark.sql.functions import explode
+from pyspark.sql.functions import length
+from pyspark.sql.functions import map_from_entries
+from pyspark.sql.functions import size
+from pyspark.sql.functions import struct
 from pyspark.sql.types import StringType
 
 
@@ -151,17 +148,18 @@ class Fields:
 @click.command('peptide_summary', short_help='')
 @click.option('-psm', help="Input psm parquet files. ie., /path/to/", required=True)
 @click.option('-pep', help="Input peptide parquet files. ie., /path/to/", required=True)
-@click.option('--min-aa', help="Filter the minimum amino acids for each peptide to be consider (default=7)", default = 7, required=False)
-@click.option('--fdr-score', help="Filter the FDR score (default=0.0)", default = 0.0, required=False)
+@click.option('--min-aa', help="Filter the minimum amino acids for each peptide to be consider (default=7)", default=7,
+              required=False)
+@click.option('--fdr-score', help="Filter the FDR score (default=0.0)", default=0.0, required=False)
 @click.option('-o', '--out-path', help="Output path to store parquets. ie., /out/path", required=True)
 def peptide_summary(psm, pep, min_aa, fdr_score, out_path):
-
   """
   The command peptide_summary use the psm parquet files and peptide evidence parquet files to aggregate all the evidences
   at the peptide level. The psms files contains the link to the specific spectrum, the PSM information including the
   PSM scores. This file is translated from the PRIDE PSM json files. The peptide evidence parquet files are translated from
   the the peptide evidence json files and contains the protein used for identification and the peptide level statistics.
 
+  :param min_aa: Minimun number of aminoacids in peptide
   :param psm: File path of all the psms parquet files
   :param pep: File path of all the peptide evidence parquet files
   :param out_path: Output file folder containing the peptide aggregation view.
@@ -235,7 +233,7 @@ def peptide_summary(psm, pep, min_aa, fdr_score, out_path):
   # df_pep_fdr.show(truncate=False)
 
   df_pep_summary_first = df_pep_psm.join(df_pep_fdr, (df_pep_psm.peptideSequence == df_pep_fdr.peptideSequence) &
-                                    (df_pep_psm.proteinAccession == df_pep_fdr.proteinAccession)) \
+                                         (df_pep_psm.proteinAccession == df_pep_fdr.proteinAccession)) \
     .select(df_pep_psm.peptideSequence, df_pep_psm.proteinAccession,
             Fields.EXTERNAL_PROJECT_ACCESSION, 'fdrscore') \
     .groupby(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION) \
@@ -245,30 +243,36 @@ def peptide_summary(psm, pep, min_aa, fdr_score, out_path):
   # df_pep_summary_first.show(truncate=False)
 
   df_pep_summary_second = df_pep_summary_first.join(df_pep_psm_count,
-                                         (df_pep_summary_first.peptideSequence == df_pep_psm_count.peptideSequence) &
-                                         (df_pep_summary_first.proteinAccession == df_pep_psm_count.proteinAccession)) \
-    .select(df_pep_summary_first.peptideSequence, df_pep_summary_first.proteinAccession, Fields.EXTERNAL_PROJECT_ACCESSIONS,
+                                                    (
+                                                      df_pep_summary_first.peptideSequence == df_pep_psm_count.peptideSequence) &
+                                                    (
+                                                      df_pep_summary_first.proteinAccession == df_pep_psm_count.proteinAccession)) \
+    .select(df_pep_summary_first.peptideSequence, df_pep_summary_first.proteinAccession,
+            Fields.EXTERNAL_PROJECT_ACCESSIONS,
             'best_search_engine_score', 'psms_count')
   # df_pep_summary_second.show(truncate=False)
 
   df_pep_summary_third = df_pep_summary_second.join(df_pep_best_usis,
-                                         (df_pep_summary_second.peptideSequence == df_pep_best_usis.peptideSequence) &
-                                         (df_pep_summary_second.proteinAccession == df_pep_best_usis.proteinAccession)) \
-    .select(df_pep_summary_second.peptideSequence, df_pep_summary_second.proteinAccession, Fields.EXTERNAL_PROJECT_ACCESSIONS,
+                                                    (
+                                                      df_pep_summary_second.peptideSequence == df_pep_best_usis.peptideSequence) &
+                                                    (
+                                                      df_pep_summary_second.proteinAccession == df_pep_best_usis.proteinAccession)) \
+    .select(df_pep_summary_second.peptideSequence, df_pep_summary_second.proteinAccession,
+            Fields.EXTERNAL_PROJECT_ACCESSIONS,
             'best_search_engine_score', 'psms_count', col('usis').alias('best_usis'))
   # df_pep_summary_third.show(truncate=False)
 
   df_pep_ptm = df_pep.select(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION, Fields.EXTERNAL_PROJECT_ACCESSION,
                              explode(Fields.PROJECT_IDENTIFIED_PTM).alias("ptms"))
   df_pep_ptm_second = df_pep_ptm.select(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION,
-                                  Fields.EXTERNAL_PROJECT_ACCESSION,
-                                  col('ptms.modification.accession').alias('modification'),
-                                  explode("ptms.positionMap").alias("positionMap"))
+                                        Fields.EXTERNAL_PROJECT_ACCESSION,
+                                        col('ptms.modification.accession').alias('modification'),
+                                        explode("ptms.positionMap").alias("positionMap"))
   df_pep_ptm_second.show(truncate=False, n=4000)
   df_pep_ptm_second.printSchema()
 
   df_pep_ptm_third = df_pep_ptm_second.groupby(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION, struct('modification',
-                                                                                              'positionMap.key')) \
+                                                                                                         'positionMap.key')) \
     .agg(functions.collect_set(Fields.EXTERNAL_PROJECT_ACCESSION)) \
     .toDF(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION, 'ptms', 'project_accessions')
   # df_pep_ptm_third.show(truncate=False)
@@ -284,9 +288,12 @@ def peptide_summary(psm, pep, min_aa, fdr_score, out_path):
   # df_pep_ptm_four.printSchema()
 
   df_pep_summary_four = df_pep_summary_third.join(df_pep_ptm_four,
-                                         (df_pep_summary_third.peptideSequence == df_pep_ptm_four.peptideSequence) &
-                                         (df_pep_summary_third.proteinAccession == df_pep_ptm_four.proteinAccession)) \
-    .select(df_pep_summary_third.peptideSequence, df_pep_summary_third.proteinAccession, Fields.EXTERNAL_PROJECT_ACCESSIONS,
+                                                  (
+                                                    df_pep_summary_third.peptideSequence == df_pep_ptm_four.peptideSequence) &
+                                                  (
+                                                    df_pep_summary_third.proteinAccession == df_pep_ptm_four.proteinAccession)) \
+    .select(df_pep_summary_third.peptideSequence, df_pep_summary_third.proteinAccession,
+            Fields.EXTERNAL_PROJECT_ACCESSIONS,
             'best_search_engine_score', 'psms_count', 'best_usis', 'ptms_map')
 
   df_pep_summary_four.write.parquet(out_path, mode='append', compression='snappy')
