@@ -2,9 +2,9 @@
 
 PySpark package for analysis of proteomics big data.
 
-![Python application](https://github.com/ypriverol/sparkMS/workflows/Python%20application/badge.svg)
+[![Python application](https://github.com/bigbio/sparkms/actions/workflows/python-app.yml/badge.svg?branch=main)](https://github.com/bigbio/sparkms/actions/workflows/python-app.yml)
 
-[![Unit testing workflow](https://github.com/bigbio/sparkms/actions/workflows/unit_tests.yml/badge.svg)](https://github.com/bigbio/sparkms/actions/workflows/unit_tests.yml)
+[![Unit testing workflow](https://github.com/bigbio/sparkms/actions/workflows/unit_tests.yml/badge.svg?branch=main)](https://github.com/bigbio/sparkms/actions/workflows/unit_tests.yml)
 
 
 ## Description
