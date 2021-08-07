@@ -22,8 +22,8 @@ jobs:
       - run: spark-submit --version
       - name: install requirements
         run: |
-          pip3 install -r sparkms/requirements.txt
-          pip3 install -r tests/requirements.txt
+          pip3 install -r requirements.txt
+          pip3 install -r requirements.txt
       - name: Run tests
         run: |
           cd tests/
