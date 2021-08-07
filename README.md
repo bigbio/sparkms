@@ -15,6 +15,8 @@ The sparkMS package allows to perform data analysis of MS-based proteomics data 
 - pyspark==3.0.0
 - pyarrow==2.0.0
 
+**Note**: The software versions are crucial for the package and scripts to work. An small change in the versions of Spark or pyspark can make the tool fail.
+
 ## Some functionalities:
 
 - Aggregate peptide spectrum matches across multiple experiments to obtain peptide evidences.
