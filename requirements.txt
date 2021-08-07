@@ -3,3 +3,4 @@ pyspark==3.0.0
 pytest
 pyarrow==2.0.0
 pyteomics
+pandas
