@@ -1,5 +1,5 @@
 click
-pyspark
+pyspark==3.0.0
 pytest
-pyarrow
+pyarrow==2.0.0
 pyteomics
