@@ -130,4 +130,4 @@ dmypy.json
 
 .idea/
 .idea/*
-/tests/resources/out_path/
+*out_path*
