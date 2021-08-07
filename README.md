@@ -7,13 +7,18 @@ PySpark package for analysis of proteomics big data.
 
 ## Description
 
-The sparkms package allows to perform data analysis of MS-based proteomics data large scale. The package is use by PRIDE database (www.ebi.ac.uk/pride) to perform multiple tasks across public proteomics datasets.
+The sparkMS package allows to perform data analysis of MS-based proteomics data large scale. The package is use by PRIDE database (www.ebi.ac.uk/pride) to perform multiple tasks across public proteomics datasets.
 
-## Some funcionalities:
+## Prerequisites and Software versions
+
+- Spark **(3.0.0)**
+- pyspark==3.0.0
+- pyarrow==2.0.0
+
+## Some functionalities:
 
 - Aggregate peptide spectrum matches across multiple experiments to obtain peptide evidences.
 - Aggregate all the peptide evidences across datasets for each protein evidence.
-
 
 ## Issues
 
