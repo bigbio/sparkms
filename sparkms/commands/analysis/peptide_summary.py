@@ -159,7 +159,7 @@ def peptide_summary(psm, pep, min_aa, fdr_score, out_path):
   PSM scores. This file is translated from the PRIDE PSM json files. The peptide evidence parquet files are translated from
   the the peptide evidence json files and contains the protein used for identification and the peptide level statistics.
 
-  :param min_aa: Minimun number of aminoacids in peptide
+  :param min_aa: Minimum number of amino acids in peptide
   :param psm: File path of all the psms parquet files
   :param pep: File path of all the peptide evidence parquet files
   :param out_path: Output file folder containing the peptide aggregation view.
