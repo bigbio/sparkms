@@ -145,7 +145,9 @@ class Fields:
   SPECTRA_USI: Final = "spectraUsi"
   PSM_SUMMARY_FILE: Final = "fileName"
 
-df_uniprot_map = None
+
+uniprot_map_dict = None
+
 
 @click.command('peptide_summary', short_help='')
 @click.option('-psm', help="Input psm parquet files. ie., /path/to/", required=True)
@@ -175,11 +177,18 @@ def peptide_summary(psm, pep, uniprot_map, min_aa, fdr_score, out_path):
   # Read the psms and peptide into a dataset
   df_psm_original = sql_context.read.parquet(psm)
   df_pep_original = sql_context.read.parquet(pep)
+  global uniprot_map_dict
   df_uniprot_map = sql_context.read.parquet(uniprot_map)
   # df_uniprot_map.show(truncate=False)
 
+  rdd_uniprot_map = df_uniprot_map.rdd
+  keypair_rdd = rdd_uniprot_map.map(lambda x: (x[1], x[0]))
+  uniprot_map_dict = keypair_rdd.collectAsMap()
+  # print(uniprot_map_dict)
+
   udf_get_uniprot_protein_accession = udf(lambda z: get_uniprot_protein_accession(z), StringType())
 
+  # print(get_uniprot_protein_accession("ALBU_HUMAN"))
 
   # filter out smaller peptides than variable min_aa (default = 7)
   df_pep_filtered = df_pep_original.filter(length(Fields.PEPTIDE_SEQUENCE) > min_aa)
@@ -321,6 +330,9 @@ def get_uniprot_protein_accession(s):
     tr|P31271|HXA13_HUMAN  -> tr|?|2? -> P31271
     P31271 -> ?  -> P31271
     HXA13_HUMAN -> 2? -> '''
+
+  global uniprot_map_dict
+
   try:
     if s is None:
       return ''
@@ -329,15 +341,14 @@ def get_uniprot_protein_accession(s):
     if len(a) == 3 and (a[0] == 'SP' or a[0] == 'TR'):
       return a[1]
     elif len(a) == 1 and '_' in s:
-      prot_df = df_uniprot_map.filter(df_uniprot_map.ID == s_upper)
-      if prot_df.count() == 0:
-        return s
-      # prot_df.show()
-      row = prot_df.select("AC").collect()[0]
-      return row[0]
+      ss = uniprot_map_dict.get(s_upper)
+      if ss is None:
+        return s_upper
+      return ss
     else:
       return s
   except:
+    # raise
     return s
 
 if __name__ == '__main__':
