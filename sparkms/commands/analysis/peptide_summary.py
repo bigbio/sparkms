@@ -284,8 +284,8 @@ def peptide_summary(psm, pep, uniprot_map, min_aa, fdr_score, out_path):
                                         Fields.EXTERNAL_PROJECT_ACCESSION,
                                         col('ptms.modification.accession').alias('modification'),
                                         explode("ptms.positionMap").alias("positionMap"))
-  df_pep_ptm_second.show(truncate=False, n=4000)
-  df_pep_ptm_second.printSchema()
+  # df_pep_ptm_second.show(truncate=False, n=4000)
+  # df_pep_ptm_second.printSchema()
 
   df_pep_ptm_third = df_pep_ptm_second.groupby(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION, struct('modification',
                                                                                                          'positionMap.key')) \
