@@ -8,6 +8,7 @@ from pyspark.sql.functions import length
 from pyspark.sql.functions import map_from_entries
 from pyspark.sql.functions import size
 from pyspark.sql.functions import struct
+from pyspark.sql.functions import udf
 from pyspark.sql.types import StringType
 
 
@@ -144,15 +145,17 @@ class Fields:
   SPECTRA_USI: Final = "spectraUsi"
   PSM_SUMMARY_FILE: Final = "fileName"
 
+df_uniprot_map = None
 
 @click.command('peptide_summary', short_help='')
 @click.option('-psm', help="Input psm parquet files. ie., /path/to/", required=True)
 @click.option('-pep', help="Input peptide parquet files. ie., /path/to/", required=True)
+@click.option('-uniprot_map', help="uniprot mapping parquet files. ie., /path/to/", required=True)
 @click.option('--min-aa', help="Filter the minimum amino acids for each peptide to be consider (default=7)", default=7,
               required=False)
 @click.option('--fdr-score', help="Filter the FDR score (default=0.0)", default=0.0, required=False)
 @click.option('-o', '--out-path', help="Output path to store parquets. ie., /out/path", required=True)
-def peptide_summary(psm, pep, min_aa, fdr_score, out_path):
+def peptide_summary(psm, pep, uniprot_map, min_aa, fdr_score, out_path):
   """
   The command peptide_summary use the psm parquet files and peptide evidence parquet files to aggregate all the evidences
   at the peptide level. The psms files contains the link to the specific spectrum, the PSM information including the
@@ -172,12 +175,25 @@ def peptide_summary(psm, pep, min_aa, fdr_score, out_path):
   # Read the psms and peptide into a dataset
   df_psm_original = sql_context.read.parquet(psm)
   df_pep_original = sql_context.read.parquet(pep)
+  df_uniprot_map = sql_context.read.parquet(uniprot_map)
+  # df_uniprot_map.show(truncate=False)
+
+  udf_get_uniprot_protein_accession = udf(lambda z: get_uniprot_protein_accession(z), StringType())
+
 
   # filter out smaller peptides than variable min_aa (default = 7)
-  df_pep = df_pep_original.filter(length(Fields.PEPTIDE_SEQUENCE) > min_aa)
-  df_psm = df_psm_original.filter(length(Fields.PEPTIDE_SEQUENCE) > min_aa)
-  # df_pep.show(truncate=False)
-  # df_psm.show(truncate=False)
+  df_pep_filtered = df_pep_original.filter(length(Fields.PEPTIDE_SEQUENCE) > min_aa)
+  df_psm_filtered = df_psm_original.filter(length(Fields.PEPTIDE_SEQUENCE) > min_aa)
+  # df_pep_filtered.show(truncate=False, n=1000)
+  # df_psm_filtered.show(truncate=False)
+
+  df_psm = df_psm_filtered
+
+  df_pep = df_pep_filtered.withColumn(Fields.PROTEIN_ACCESSION, udf_get_uniprot_protein_accession(Fields.PROTEIN_ACCESSION))
+  # df_pep.show(truncate=False, n=1000)
+
+  # df_pep.exceptAll(df_pep_filtered).show(truncate=False, n=1000)
+  # df_pep_filtered.exceptAll(df_pep).show(truncate=False, n=1000)
 
   df_psm_explode_additional_attr = df_psm.select(Fields.USI,
                                                  explode(Fields.ADDITIONAL_ATTRIBUTES).alias(
@@ -299,6 +315,30 @@ def peptide_summary(psm, pep, min_aa, fdr_score, out_path):
   df_pep_summary_four.write.parquet(out_path, mode='append', compression='snappy')
   # df_pep_summary_four.show(truncate=False)
 
+
+def get_uniprot_protein_accession(s):
+  '''sp|P31271|HXA13_HUMAN -> sp|?|2? -> P31271
+    tr|P31271|HXA13_HUMAN  -> tr|?|2? -> P31271
+    P31271 -> ?  -> P31271
+    HXA13_HUMAN -> 2? -> '''
+  try:
+    if s is None:
+      return ''
+    s_upper = s.upper()
+    a = s_upper.split('|')
+    if len(a) == 3 and (a[0] == 'SP' or a[0] == 'TR'):
+      return a[1]
+    elif len(a) == 1 and '_' in s:
+      prot_df = df_uniprot_map.filter(df_uniprot_map.ID == s_upper)
+      if prot_df.count() == 0:
+        return s
+      # prot_df.show()
+      row = prot_df.select("AC").collect()[0]
+      return row[0]
+    else:
+      return s
+  except:
+    return s
 
 if __name__ == '__main__':
   peptide_summary()
