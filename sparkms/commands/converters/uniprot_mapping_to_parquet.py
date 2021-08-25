@@ -21,6 +21,7 @@ def uniprot_mapping_to_parquet(input_path, out_path):
   df_uniprot = df.select([trim(col(c)).alias(c) for c in df.columns])
   # df2 = df_uniprot.select("AC", "ID", length("ID"))
   df_uniprot.show(n = 30)
+  # df_uniprot = df_uniprot.limit(10000)
   df_uniprot.write.parquet(out_path, mode='append', compression='snappy')
 
 if __name__ == "__main__":

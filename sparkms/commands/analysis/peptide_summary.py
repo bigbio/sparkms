@@ -146,9 +146,6 @@ class Fields:
   PSM_SUMMARY_FILE: Final = "fileName"
 
 
-uniprot_map_dict = None
-
-
 @click.command('peptide_summary', short_help='')
 @click.option('-psm', help="Input psm parquet files. ie., /path/to/", required=True)
 @click.option('-pep', help="Input peptide parquet files. ie., /path/to/", required=True)
@@ -177,18 +174,11 @@ def peptide_summary(psm, pep, uniprot_map, min_aa, fdr_score, out_path):
   # Read the psms and peptide into a dataset
   df_psm_original = sql_context.read.parquet(psm)
   df_pep_original = sql_context.read.parquet(pep)
-  global uniprot_map_dict
   df_uniprot_map = sql_context.read.parquet(uniprot_map)
   # df_uniprot_map.show(truncate=False)
 
-  rdd_uniprot_map = df_uniprot_map.rdd
-  keypair_rdd = rdd_uniprot_map.map(lambda x: (x[1], x[0]))
-  uniprot_map_dict = keypair_rdd.collectAsMap()
-  # print(uniprot_map_dict)
-
-  udf_get_uniprot_protein_accession = udf(lambda z: get_uniprot_protein_accession(z), StringType())
-
-  # print(get_uniprot_protein_accession("ALBU_HUMAN"))
+  udf_get_protein_accession = udf(lambda z: get_protein_accession(z), StringType())
+  udf_get_uniprot_protein_accession = udf(lambda curr_acc, uniprot_acc : get_uniprot_protein_accession(curr_acc, uniprot_acc), StringType())
 
   # filter out smaller peptides than variable min_aa (default = 7)
   df_pep_filtered = df_pep_original.filter(length(Fields.PEPTIDE_SEQUENCE) > min_aa)
@@ -198,11 +188,15 @@ def peptide_summary(psm, pep, uniprot_map, min_aa, fdr_score, out_path):
 
   df_psm = df_psm_filtered
 
-  df_pep = df_pep_filtered.withColumn(Fields.PROTEIN_ACCESSION, udf_get_uniprot_protein_accession(Fields.PROTEIN_ACCESSION))
-  # df_pep.show(truncate=False, n=1000)
+  df_pep_prot = df_pep_filtered.withColumn(Fields.PROTEIN_ACCESSION, udf_get_protein_accession(Fields.PROTEIN_ACCESSION))
+  df_pep_uniprot = df_pep_prot.join(df_uniprot_map, df_pep_prot.proteinAccession == df_uniprot_map.ID, 'left')
+  df_pep = df_pep_uniprot.withColumn(Fields.PROTEIN_ACCESSION, udf_get_uniprot_protein_accession(Fields.PROTEIN_ACCESSION, "AC"))
+  columns_to_drop = ['ID', 'AC']
+  df_pep = df_pep.drop(*columns_to_drop)
+  # df_pep.show(truncate=False, n=100)
 
-  # df_pep.exceptAll(df_pep_filtered).show(truncate=False, n=1000)
-  # df_pep_filtered.exceptAll(df_pep).show(truncate=False, n=1000)
+  # df_pep.exceptAll(df_pep_prot).show(truncate=False, n=1000)
+  # df_pep_prot.exceptAll(df_pep).show(truncate=False, n=1000)
 
   df_psm_explode_additional_attr = df_psm.select(Fields.USI,
                                                  explode(Fields.ADDITIONAL_ATTRIBUTES).alias(
@@ -325,7 +319,7 @@ def peptide_summary(psm, pep, uniprot_map, min_aa, fdr_score, out_path):
   # df_pep_summary_four.show(truncate=False)
 
 
-def get_uniprot_protein_accession(s):
+def get_protein_accession(s):
   '''sp|P31271|HXA13_HUMAN -> sp|?|2? -> P31271
     tr|P31271|HXA13_HUMAN  -> tr|?|2? -> P31271
     P31271 -> ?  -> P31271
@@ -340,16 +334,17 @@ def get_uniprot_protein_accession(s):
     a = s_upper.split('|')
     if len(a) == 3 and (a[0] == 'SP' or a[0] == 'TR'):
       return a[1]
-    elif len(a) == 1 and '_' in s:
-      ss = uniprot_map_dict.get(s_upper)
-      if ss is None:
-        return s_upper
-      return ss
     else:
       return s
   except:
     # raise
     return s
+
+def get_uniprot_protein_accession(curr_acc, uniprot_acc):
+  if uniprot_acc is None:
+    return curr_acc
+  else:
+    return uniprot_acc
 
 if __name__ == '__main__':
   peptide_summary()
