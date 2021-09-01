@@ -45,6 +45,18 @@ def get_PE(uniprot_header):
   if pe is not None:
     return int(pe)
 
+def get_protein_name_from_header(uniprot_protein_header):
+  """
+  This function parse the protein name from Uniprot protein fasta header
+
+  :param uniprot_protein_header:
+  :return:
+  """
+  protein_name_accession = uniprot_protein_header.split("OS")[0]
+  name_member = protein_name_accession.split(" ")
+  name_member = name_member[1:(len(name_member)-1)]
+
+  return " ".join(name_member).strip()
 
 def uniprot_header_to_df(row):
   """
@@ -63,6 +75,9 @@ def uniprot_header_to_df(row):
   uniprot_header = row[0]
   accession = uniprot_header.split("|")[1]
   result.append(accession)
+
+  protein_name = get_protein_name_from_header(uniprot_header)
+  result.append(protein_name)
 
   gene_name = get_info_from_header(uniprot_header, "GN")
   result.append(gene_name)
@@ -111,7 +126,7 @@ def uniprot_mapping_to_parquet(input_id_mapping, uniprot_fasta_folder, out_path)
   print("======= processing:" + uniprot_fasta_folder)
   uniprot_fasta = sql_context.read.text(uniprot_fasta_folder + "*.fasta.gz")
   uniprot_fasta = uniprot_fasta.filter(lower(uniprot_fasta.value).contains(">"))
-  cols = ["Accession", "Gene", "Organism", "TaxId", "EvidenceLevel"]
+  cols = ["Accession", "ProteinName", "Gene", "Organism", "TaxId", "EvidenceLevel"]
   uniprot_fasta = uniprot_fasta.rdd.map(uniprot_header_to_df).toDF().toDF(*cols)
   uniprot_fasta.show(n=30)
 
