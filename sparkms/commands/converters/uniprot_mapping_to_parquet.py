@@ -88,6 +88,8 @@ def uniprot_mapping_to_parquet(input_id_mapping, uniprot_fasta_folder, out_path)
   - Gene: Gene name for the corresponding protein
   - Organism: Organism for the corresponding protein
   - EvidenceLevel: Protein evidence level following uniprot guidelines
+
+
   :param input_id_mapping: input id tab-delimited mapping file from uniprot
   :param uniprot_fasta_folder: folder containing fasta files from uniprot (ext fasta.gz)
   :return:
