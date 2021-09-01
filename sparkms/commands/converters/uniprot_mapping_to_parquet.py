@@ -66,8 +66,13 @@ def uniprot_header_to_df(row):
 
   gene_name = get_info_from_header(uniprot_header, "GN")
   result.append(gene_name)
+
   organism  = get_info_from_header(uniprot_header, "OS")
   result.append(organism)
+
+  taxid = get_info_from_header(uniprot_header, "OX")
+  result.append(taxid)
+
   pe        = get_PE(uniprot_header)
   result.append(pe)
 
@@ -106,7 +111,7 @@ def uniprot_mapping_to_parquet(input_id_mapping, uniprot_fasta_folder, out_path)
   print("======= processing:" + uniprot_fasta_folder)
   uniprot_fasta = sql_context.read.text(uniprot_fasta_folder + "*.fasta.gz")
   uniprot_fasta = uniprot_fasta.filter(lower(uniprot_fasta.value).contains(">"))
-  cols = ["Accession", "Gene", "Organism", "EvidenceLevel"]
+  cols = ["Accession", "Gene", "Organism", "TaxId", "EvidenceLevel"]
   uniprot_fasta = uniprot_fasta.rdd.map(uniprot_header_to_df).toDF().toDF(*cols)
   uniprot_fasta.show(n=30)
 
