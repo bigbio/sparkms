@@ -328,11 +328,9 @@ def peptide_summary(psm, pep, uniprot_map, min_aa, fdr_score, out_path):
     df_pep_summary_uniprot = df_pep_summary_uniprot_acc.join(df_uniprot_map, df_pep_summary_uniprot_acc.proteinAccession == df_uniprot_map.AC, 'left')
     columns_to_drop = ['ID', 'AC']
     df_pep_summary_uniprot = df_pep_summary_uniprot.drop(*columns_to_drop)
+    # df_pep_summary_uniprot.show(truncate=False, n=3000)
 
-    df_pep_summary_uniprot.show(truncate=False, n=3000)
-
-
-    # df_pep_summary_uniprot.write.parquet(out_path, mode='append', compression='snappy')
+    df_pep_summary_uniprot.write.parquet(out_path, mode='append', compression='snappy')
 
 
 def get_protein_accession(s):
