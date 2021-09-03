@@ -182,6 +182,8 @@ def peptide_summary(psm, pep, uniprot_map, min_aa, fdr_score, out_path):
     udf_get_uniprot_protein_accession = udf(
         lambda curr_acc, uniprot_acc: get_uniprot_protein_accession(curr_acc, uniprot_acc), StringType())
     udf_is_uniprot_accession = udf(lambda z: is_uniprot_accession(z), BooleanType())
+    udf_is_multiorganism_peptides = udf(lambda z: is_multiorganism_peptides(z), BooleanType())
+    udf_is_uniq_peptide_within_organism = udf(lambda z: is_uniq_peptide_within_organism(z), BooleanType())
 
     # filter out smaller peptides than variable min_aa (default = 7)
     df_pep_filtered = df_pep_original.filter(length(Fields.PEPTIDE_SEQUENCE) > min_aa)
@@ -267,20 +269,16 @@ def peptide_summary(psm, pep, uniprot_map, min_aa, fdr_score, out_path):
     # df_pep_summary_first.show(truncate=False)
 
     df_pep_summary_second = df_pep_summary_first.join(df_pep_psm_count,
-                                                      (
-                                                              df_pep_summary_first.peptideSequence == df_pep_psm_count.peptideSequence) &
-                                                      (
-                                                              df_pep_summary_first.proteinAccession == df_pep_psm_count.proteinAccession)) \
+                                                      (df_pep_summary_first.peptideSequence == df_pep_psm_count.peptideSequence) &
+                                                      (df_pep_summary_first.proteinAccession == df_pep_psm_count.proteinAccession)) \
         .select(df_pep_summary_first.peptideSequence, df_pep_summary_first.proteinAccession,
                 Fields.EXTERNAL_PROJECT_ACCESSIONS,
                 'best_search_engine_score', 'psms_count')
     # df_pep_summary_second.show(truncate=False)
 
     df_pep_summary_third = df_pep_summary_second.join(df_pep_best_usis,
-                                                      (
-                                                              df_pep_summary_second.peptideSequence == df_pep_best_usis.peptideSequence) &
-                                                      (
-                                                              df_pep_summary_second.proteinAccession == df_pep_best_usis.proteinAccession)) \
+                                                      (df_pep_summary_second.peptideSequence == df_pep_best_usis.peptideSequence) &
+                                                      (df_pep_summary_second.proteinAccession == df_pep_best_usis.proteinAccession)) \
         .select(df_pep_summary_second.peptideSequence, df_pep_summary_second.proteinAccession,
                 Fields.EXTERNAL_PROJECT_ACCESSIONS,
                 'best_search_engine_score', 'psms_count', col('usis').alias('best_usis'))
@@ -312,10 +310,8 @@ def peptide_summary(psm, pep, uniprot_map, min_aa, fdr_score, out_path):
     # df_pep_ptm_four.printSchema()
 
     df_pep_summary_four = df_pep_summary_third.join(df_pep_ptm_four,
-                                                    (
-                                                            df_pep_summary_third.peptideSequence == df_pep_ptm_four.peptideSequence) &
-                                                    (
-                                                            df_pep_summary_third.proteinAccession == df_pep_ptm_four.proteinAccession)) \
+                                                    (df_pep_summary_third.peptideSequence == df_pep_ptm_four.peptideSequence) &
+                                                    (df_pep_summary_third.proteinAccession == df_pep_ptm_four.proteinAccession)) \
         .select(df_pep_summary_third.peptideSequence, df_pep_summary_third.proteinAccession,
                 Fields.EXTERNAL_PROJECT_ACCESSIONS,
                 'best_search_engine_score', 'psms_count', 'best_usis', 'ptms_map')
@@ -325,12 +321,48 @@ def peptide_summary(psm, pep, uniprot_map, min_aa, fdr_score, out_path):
 
     # df_pep_summary_uniprot_acc.show(truncate=False, n=3000)
 
-    df_pep_summary_uniprot = df_pep_summary_uniprot_acc.join(df_uniprot_map, df_pep_summary_uniprot_acc.proteinAccession == df_uniprot_map.AC, 'left')
-    columns_to_drop = ['ID', 'AC']
-    df_pep_summary_uniprot = df_pep_summary_uniprot.drop(*columns_to_drop)
-    # df_pep_summary_uniprot.show(truncate=False, n=3000)
+    df_pepsummary_with_uniprot_fields = df_pep_summary_uniprot_acc.join(df_uniprot_map,
+                                                                        df_pep_summary_uniprot_acc.proteinAccession == df_uniprot_map.AC,
+                                                                        'left').drop('ID', 'AC')
+    # df_pepsummary_with_uniprot_fields.show(truncate=False, n=3000)
 
-    df_pep_summary_uniprot.write.parquet(out_path, mode='append', compression='snappy')
+    df_pepsummary_uniprot_acc_only = df_pepsummary_with_uniprot_fields.filter("is_uniprot_accession == True")
+    # df_pepsummary_uniprot_acc_only.show(truncate=False, n=3000)
+
+    df_multiorganism_peptides = df_pepsummary_uniprot_acc_only.groupBy(Fields.PEPTIDE_SEQUENCE) \
+        .agg(functions.count('TaxId').alias('n'))
+    # df_multiorganism_peptides = df_multiorganism_peptides.withColumn('is_multiorganism_peptides',
+    #                                                                  udf_is_multiorganism_peptides('n')).drop('n')
+    df_multiorganism_peptides = df_multiorganism_peptides.withColumn('is_multiorganism_peptides',
+                                                                     udf_is_multiorganism_peptides('n'))\
+        .select(col(Fields.PEPTIDE_SEQUENCE).alias('pepseq'), 'is_multiorganism_peptides') #rename pepseq col just to avoid duplicates & confusion while join
+    # df_multiorganism_peptides.show(truncate=False, n=3000)
+
+    df_pepsummary_final_one = df_pepsummary_with_uniprot_fields.join(df_multiorganism_peptides,
+                                                                     df_pepsummary_with_uniprot_fields.peptideSequence == df_multiorganism_peptides.pepseq,
+                                                                     'left').drop(df_multiorganism_peptides.pepseq)
+
+    df_uniq_peptides_within_org = df_pepsummary_uniprot_acc_only.groupBy(Fields.PEPTIDE_SEQUENCE, 'TaxId') \
+        .agg(functions.count(Fields.PROTEIN_ACCESSION).alias('n'))
+    # df_uniq_peptides_within_org = df_uniq_peptides_within_org.withColumn('is_uniq_peptide_within_organism',
+    #                                                                      udf_is_uniq_peptide_within_organism('n')).drop('n')
+    df_uniq_peptides_within_org = df_uniq_peptides_within_org.withColumn('is_uniq_peptide_within_organism',
+                                                                         udf_is_uniq_peptide_within_organism('n')) \
+        .select(col(Fields.PEPTIDE_SEQUENCE).alias('pepseq'), col('TaxId').alias('taxid1'), 'is_uniq_peptide_within_organism')  # rename pepseq & taxid cols just to avoid duplicates & confusion while join
+
+    # df_uniq_peptides_within_org.show(truncate=False, n=3000)
+
+    df_pepsummary_final_two = df_pepsummary_final_one.join(df_uniq_peptides_within_org,
+                                                           (df_pepsummary_final_one.peptideSequence == df_uniq_peptides_within_org.pepseq)
+                                                           & (df_pepsummary_final_one.TaxId == df_uniq_peptides_within_org.taxid1),
+                                                           'left').drop('pepseq','taxid1')
+    # df_pepsummary_final_two.show(truncate=False, n=30000)
+    # df_pepsummary_final_two.printSchema()
+
+    df_pepsummary_final_two.write.parquet(out_path, mode='append', compression='snappy')
+
+    df_print = sql_context.read.parquet(out_path)
+    df_print.show(truncate=False, n=30000)
 
 
 def get_protein_accession(s):
@@ -367,6 +399,20 @@ def is_uniprot_accession(acc):
         return False
 
     return bool(re.match(r"[OPQ][0-9][A-Z0-9]{3}[0-9]|[A-NR-Z][0-9]([A-Z][A-Z0-9]{2}[0-9]){1,2}", acc))
+
+
+# uniprot_acc= true && group by peptide having count(taxid)>1
+def is_multiorganism_peptides(count_taxid):
+    if count_taxid > 1:
+        return True
+    return False
+
+
+# uniprot_acc= true && group by (peptide and taxid) having count(proteinAccession)=1
+def is_uniq_peptide_within_organism(count_prot):
+    if count_prot == 1:
+        return True
+    return False
 
 
 if __name__ == '__main__':
