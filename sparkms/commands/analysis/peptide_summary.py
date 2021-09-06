@@ -150,12 +150,13 @@ class Fields:
 @click.command('peptide_summary', short_help='')
 @click.option('-psm', help="Input psm parquet files. ie., /path/to/", required=True)
 @click.option('-pep', help="Input peptide parquet files. ie., /path/to/", required=True)
-@click.option('-uniprot_map', help="uniprot mapping parquet files. ie., /path/to/", required=True)
+@click.option('--uniprot-map', help="uniprot mapping parquet files. ie., /path/to/", required=True)
 @click.option('--min-aa', help="Filter the minimum amino acids for each peptide to be consider (default=7)", default=7,
               required=False)
-@click.option('--fdr-score', help="Filter the FDR score (default=0.0)", default=0.0, required=False)
+@click.option('--min-fdr-score', help="Minimum FDR score (default=0.0)", default=0.0, required=False)
+@click.option('--max-fdr-score', help='Maximum FDR Score default=0.01', default=0.01, required=False)
 @click.option('-o', '--out-path', help="Output path to store parquets. ie., /out/path", required=True)
-def peptide_summary(psm, pep, uniprot_map, min_aa, fdr_score, out_path):
+def peptide_summary(psm, pep, uniprot_map, min_aa, min_fdr_score, max_fdr_score, out_path):
     """
   The command peptide_summary use the psm parquet files and peptide evidence parquet files to aggregate all the evidences
   at the peptide level. The psms files contains the link to the specific spectrum, the PSM information including the
@@ -165,6 +166,8 @@ def peptide_summary(psm, pep, uniprot_map, min_aa, fdr_score, out_path):
   :param min_aa: Minimum number of amino acids in peptide
   :param psm: File path of all the psms parquet files
   :param pep: File path of all the peptide evidence parquet files
+  :param min_fdr_score: Minimum FDR Score for one PSM
+  :param max_fdr_score: Maximum FDR SCore for one PSM
   :param out_path: Output file folder containing the peptide aggregation view.
   :return:
   """
@@ -213,7 +216,7 @@ def peptide_summary(psm, pep, uniprot_map, min_aa, fdr_score, out_path):
     # df_psm_fdr.show(truncate=False)
 
     # Filter the fdrscore major than 0.0.
-    df_psm_fdr = df_psm_fdr.filter(col('fdrscore') > fdr_score)
+    df_psm_fdr = df_psm_fdr.filter(col('fdrscore') > min_fdr_score).filter(col('fdrscore') <= max_fdr_score)
     # df_psm_fdr.show(truncate=False)
 
     df_pep_psm = df_pep.select(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION,
@@ -255,7 +258,7 @@ def peptide_summary(psm, pep, uniprot_map, min_aa, fdr_score, out_path):
                 col('additionalAttributes.value').alias('fdrscore'))
     # df_pep_fdr.show(truncate=False)
 
-    df_pep_fdr = df_pep_fdr.filter(col('fdrscore') > 0.0)
+    df_pep_fdr = df_pep_fdr.filter(col('fdrscore') > min_fdr_score).filter(col('fdrscore') <= max_fdr_score)
     # df_pep_fdr.show(truncate=False)
 
     df_pep_summary_first = df_pep_psm.join(df_pep_fdr, (df_pep_psm.peptideSequence == df_pep_fdr.peptideSequence) &
