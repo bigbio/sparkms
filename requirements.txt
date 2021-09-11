@@ -4,3 +4,5 @@ pytest
 pyarrow==2.0.0
 pyteomics
 pandas
+biopython
+annoy

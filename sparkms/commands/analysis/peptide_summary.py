@@ -147,7 +147,7 @@ class Fields:
     PSM_SUMMARY_FILE: Final = "fileName"
 
 
-@click.command('peptide_summary', short_help='')
+@click.command('peptide-summary', short_help='')
 @click.option('-psm', help="Input psm parquet files. ie., /path/to/", required=True)
 @click.option('-pep', help="Input peptide parquet files. ie., /path/to/", required=True)
 @click.option('--uniprot-map', help="uniprot mapping parquet files. ie., /path/to/", required=True)
