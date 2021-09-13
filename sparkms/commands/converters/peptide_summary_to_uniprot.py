@@ -1,6 +1,3 @@
-from typing import Final
-import re
-
 import click
 from pyspark.sql import SparkSession, functions
 from pyspark.sql.functions import size, col, desc
@@ -36,7 +33,6 @@ def peptide_summary_to_uniprot(peptide_folder, fdr_threshold, out_uniprot_folder
   df_pep_original = df_pep_original.select(*uniprot_columns)
   df_pep_original.show(truncate=False, n=300)
 
-  # df_pep_original.repartition(TAXID).write.option("header", "true").mode('overwrite').partitionBy(TAXID).csv(out_uniprot_folder, sep=',')
   df_pep_original.toPandas().to_csv(out_uniprot_folder + 'peptide_evidences.tsv', sep='\t', header=True, index=False)
 
 
