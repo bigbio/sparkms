@@ -4,24 +4,22 @@ import re
 import click
 from pyspark.sql import SparkSession, functions
 from pyspark.sql.functions import size, col, desc
-from pyspark.sql import functions as F
 
-from sparkms.commons.Fields import PEPTIDE_SEQUENCE, PROTEIN_ACCESSION, BEST_SEARCH_ENGINE, NUMBER_PSMS,\
-  PROJECTS_COUNT, TAXID
-
-@click.command('peptide-uknown', short_help='')
+@click.command('peptide-unknown', short_help='')
 @click.option('--peptide-folder', help="Input peptide summary folder in parquet files. ie., /path/to/", required=True)
 @click.option('--fdr-threshold', help = 'Maximum FDR Score allowed', default = 0.01)
 @click.option('--out-peptide-file', help="Output path to store parquets. ie., /out/path", required=True)
-def peptide_summary_uknown(peptide_folder, fdr_threshold, out_peptide_file):
+def peptide_summary_unknown(peptide_folder, fdr_threshold, out_peptide_file):
   """
-  The peptide summary to uniprot input files takes the parquet output from the peptide summary analysis pipeline
-  into a uniprot output file format that can be use to push data to uniprot.
+  This function read the peptide parquet output and select all the peptides that are not mapped to uniprot accessions and
+  create a table with the peptide sequence and the original protein accession reported.
 
-  :param peptide_folder: Folder containing all the peptides
-  :param out_uniprot_folder: Output folder containing all the uniprot files
+  :param peptide_folder: Folder containing all the peptides annotated after groping with the peptide_summary.py tool
+  :param fdr_threshold: The maximum fdr value that will be allow for the best search engine score.
+  :param out_peptide_file: A Tsv file containing all the unmpapped peptides to uniprot accessions.
   :return:
   """
+
 
   # Create the Spark Context
   sql_context = SparkSession.builder.getOrCreate()
@@ -35,4 +33,4 @@ def peptide_summary_uknown(peptide_folder, fdr_threshold, out_peptide_file):
 
 
 if __name__ == '__main__':
-    peptide_summary_uknown()
+    peptide_summary_unknown()
