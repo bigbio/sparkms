@@ -212,7 +212,7 @@ def peptide_summary(psm, pep, uniprot_map, min_aa, min_fdr_score, max_fdr_score,
                                                    explode(Fields.ADDITIONAL_ATTRIBUTES).alias(
                                                        Fields.ADDITIONAL_ATTRIBUTES))
     df_psm_fdr = df_psm_explode_additional_attr.filter("additionalAttributes.accession == 'MS:1002355'") \
-        .select(Fields.USI, col('additionalAttributes.value').alias('fdrscore'))
+        .select(Fields.USI, col('additionalAttributes.value').cast('float').alias('fdrscore'))
     # df_psm_fdr.show(truncate=False)
 
     # Filter the fdrscore major than 0.0.
