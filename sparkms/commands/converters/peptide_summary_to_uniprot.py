@@ -1,5 +1,5 @@
 import click
-from pyspark.sql import SparkSession, functions
+from pyspark.sql import SparkSession
 from pyspark.sql.functions import size, col, desc
 import time
 
@@ -20,6 +20,7 @@ def peptide_summary_to_uniprot(peptide_folder, fdr_threshold, out_uniprot_folder
   :param out_uniprot_folder: Output folder containing all the uniprot files
   :return:
   """
+
 
   # Create the Spark Context
   sql_context = SparkSession.builder.getOrCreate()
