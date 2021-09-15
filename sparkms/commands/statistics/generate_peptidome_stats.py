@@ -1,10 +1,13 @@
 import click
 from pyspark.sql import SparkSession
-from pyspark.sql.functions import size, col, desc, first, count, avg, mean, expr
+from pyspark.sql.functions import size, col, desc, first, count, avg, mean, expr, collect_list
+from pyspark.sql.functions import sum as _sum
 import time
 
+from pyspark.sql.types import IntegerType
+
 from sparkms.commons.Fields import PEPTIDE_SEQUENCE, PROTEIN_ACCESSION, BEST_SEARCH_ENGINE, NUMBER_PSMS, \
-  PROJECTS_COUNT, TAXID, ORGANISM, IS_UNIQUE_UNIPROT, PEPTIDE_COUNT
+  PROJECTS_COUNT, TAXID, ORGANISM, IS_UNIQUE_UNIPROT, PEPTIDE_COUNT, EXTERNAL_PROJECT_ACCESSIONS
 
 
 @click.command('peptidome-statistics', short_help='')
@@ -33,15 +36,50 @@ def generate_peptidome_statistics(peptide_folder, fdr_threshold, species_interes
   # Read the psms and peptide into a dataset
   df_pep_original = sql_context.read.parquet(peptide_folder)
 
-  if len(species) > 0:
-    df_pep_original = df_pep_original.where(col(ORGANISM).isin(species))
-
-  df_pep_original = df_pep_original.filter(df_pep_original.is_uniprot_accession == True)\
-    .filter(df_pep_original.best_search_engine_score <= fdr_threshold).filter(df_pep_original.TaxId.isNotNull())\
+  """
+  Get general statistics about peptidome.
+  """
+  df_pep_filtered = df_pep_original.filter(df_pep_original.is_uniprot_accession == True) \
+    .filter(df_pep_original.best_search_engine_score <= fdr_threshold).filter(df_pep_original.TaxId.isNotNull()) \
     .withColumn(PROJECTS_COUNT, size(df_pep_original.projectAccessions))
 
+  """
+  Get number of peptides/proteins
+  """
+  num_peptides = df_pep_filtered.groupBy(col(PEPTIDE_SEQUENCE), col(PROTEIN_ACCESSION)).count().select(col(PROTEIN_ACCESSION), col(PEPTIDE_SEQUENCE)).distinct().count()
+  num_proteins = df_pep_filtered.select(col(PROTEIN_ACCESSION)).distinct().count()
+
+  """
+  Get the number of projects in PRIDE Archive
+  """
+  df_projects = df_pep_filtered.select(col(EXTERNAL_PROJECT_ACCESSIONS))
+  projects = df_projects.select(collect_list(EXTERNAL_PROJECT_ACCESSIONS)).first()[0]
+  all_projects = [item for sublist in projects for item in sublist]
+  num_projects = len(set(all_projects))
+
+  """
+  Get the number of psms.
+  """
+  num_psms = df_pep_filtered.select(_sum(NUMBER_PSMS)).collect()[0][0]
+
+  """
+  Get number of unique peptides, peptides that map to only one protein
+  """
+
+  num_unique_peptides = df_pep_filtered.filter(df_pep_filtered.is_uniq_peptide_within_organism == True).groupBy(col(PEPTIDE_SEQUENCE), col(PROTEIN_ACCESSION)).count().select(
+    col(PROTEIN_ACCESSION), col(PEPTIDE_SEQUENCE)).distinct().count()
+
+  print("Projects: " + str(num_projects))
+  print("Proteins: " + str(num_proteins))
+  print("Peptides: " + str(num_peptides))
+  print("Unique Peptides: " + str(num_unique_peptides))
+  print("PSMs: " + str(num_psms))
+
+  if len(species) > 0:
+    df_pep_filtered = df_pep_filtered.where(col(ORGANISM).isin(species))
+
   uniprot_columns = [PEPTIDE_SEQUENCE, PROTEIN_ACCESSION, BEST_SEARCH_ENGINE, NUMBER_PSMS, PROJECTS_COUNT, TAXID, ORGANISM, IS_UNIQUE_UNIPROT]
-  df_pep_original = df_pep_original.select(*uniprot_columns)
+  df_pep_original = df_pep_filtered.select(*uniprot_columns)
   df_pep_original.show(truncate=False, n=300)
 
   """
