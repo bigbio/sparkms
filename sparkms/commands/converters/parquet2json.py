@@ -10,9 +10,9 @@ def parquet_to_json(input_path, out_path):
     sql_context = SparkSession.builder.getOrCreate()
     df = sql_context.read.parquet(input_path)
     # df = df.withColumn("ptms_map", df["ptms_map"].cast(StringType()))
-    df.write.json(out_path, mode='append',compression='gzip', ignoreNullFields=False)
-    # df.show(n=10000, truncate=False)
-    # print(df.count())
+    df.write.json(out_path, mode='append', compression='gzip', ignoreNullFields=False)
+    df.show(n=10000, truncate=False)
+    print(df.count())
 
 
 if __name__ == "__main__":
