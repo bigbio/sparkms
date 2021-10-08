@@ -5,25 +5,27 @@ import click
 from pyspark.sql import SparkSession, functions
 from pyspark.sql.functions import col
 from pyspark.sql.functions import explode
-from pyspark.sql.functions import length
-from pyspark.sql.functions import map_from_entries
-from pyspark.sql.functions import size
-from pyspark.sql.functions import struct
-from pyspark.sql.functions import udf
-from pyspark.sql.types import StringType, BooleanType, DoubleType
+from pyspark.sql.functions import udf, desc
+from pyspark.sql.types import DoubleType
 from pyopenms import *
+
+from sparkms.commons import Fields
 
 
 def hyper_score(usi, peptide, charge, modifications, mz, masses, intensities):
 
-  if len(masses) < 10 or len(intensities) != len(masses):
-    return 0
+  if masses == None or intensities == None or len(masses) < 15 or len(intensities) != len(masses):
+    return -1.0
 
   spectrum = MSSpectrum()
   # print(masses)
   # print(intensities)
+  # print(modifications)
+
   spectrum.set_peaks([masses, intensities])
-  print(spectrum[0].getMZ(), spectrum[0].getIntensity())
+  # print(spectrum[0].getMZ(), spectrum[0].getIntensity())
+
+
 
   # Theroretical spectrum
   tsg = TheoreticalSpectrumGenerator()
@@ -32,11 +34,20 @@ def hyper_score(usi, peptide, charge, modifications, mz, masses, intensities):
   p.setValue("add_metainfo", "true")
   tsg.setParameters(p)
   peptide = AASequence.fromString(peptide)
-  tsg.getSpectrum(thspec, peptide, 1, 1)
+
+  # # Add PTMs
+  # for mod in modifications:
+  #   mass = mod['modification']['value']
+  #   for position in mod['positionMap']:
+  #     pos = position['key']
+  #     print(mass + " " + str(pos))
+  #     if position == 0:
+
+  tsg.getSpectrum(thspec, peptide, 1, int(charge))
 
   score_engine = HyperScore()
-  score = score_engine.compute(10,True,spectrum, thspec)
-  print(score)
+  score = score_engine.compute(0.5,False,spectrum, thspec)
+  # print(usi + " score: " + str(score))
 
   return score
 
@@ -51,17 +62,14 @@ def spectrum_ion_annotation(spectra, out_path):
   df_spectra = sql_context.read.parquet(spectra)
 
   udf_hyper_score = udf(hyper_score, DoubleType())
-  df_spectra.withColumn('HyperScore', udf_hyper_score('usi', 'peptideSequence', 'precursorCharge', 'modifications', 'precursorMz','masses','intensities')).show()
+  df_spectra = df_spectra.withColumn('HyperScore', udf_hyper_score('usi', 'peptideSequence', 'precursorCharge', 'modifications', 'precursorMz','masses','intensities'))
 
+  df_psm_final = df_spectra.select("usi", "peptideSequence", "numPeaks", 'HyperScore', explode('properties').alias(Fields.ADDITIONAL_ATTRIBUTES))
+  df_psm_final = df_psm_final.filter("additionalAttributes.accession == 'MS:1002355'").select(Fields.USI, "peptideSequence", "numPeaks", 'HyperScore', col('additionalAttributes.value').cast('float').alias('fdrscore')).sort(desc("HyperScore"))
 
-  df_spectra.show(n=300)
+  df_psm_final.show(n=300, truncate=False)
 
-
-
-
-
-
-
+  df_psm_final.write.parquet(out_path, mode='append', compression='snappy')
 
 if __name__ == '__main__':
     spectrum_ion_annotation()
