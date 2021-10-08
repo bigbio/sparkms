@@ -46,7 +46,7 @@ def hyper_score(usi, peptide, charge, modifications, mz, masses, intensities):
   tsg.getSpectrum(thspec, peptide, 1, int(charge))
 
   score_engine = HyperScore()
-  score = score_engine.compute(0.5,False,spectrum, thspec)
+  score = score_engine.compute(20,True,spectrum, thspec)
   # print(usi + " score: " + str(score))
 
   return score
