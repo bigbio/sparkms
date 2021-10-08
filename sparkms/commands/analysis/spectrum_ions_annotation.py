@@ -64,7 +64,7 @@ def spectrum_ion_annotation(spectra, out_path):
   udf_hyper_score = udf(hyper_score, DoubleType())
   df_spectra = df_spectra.withColumn('HyperScore', udf_hyper_score('usi', 'peptideSequence', 'precursorCharge', 'modifications', 'precursorMz','masses','intensities'))
 
-  df_psm_final = df_spectra.select("usi", "numPeaks", 'HyperScore', explode('properties').alias(Fields.ADDITIONAL_ATTRIBUTES))
+  df_psm_final = df_spectra.select("usi", "peptideSequence", "numPeaks", 'HyperScore', explode('properties').alias(Fields.ADDITIONAL_ATTRIBUTES))
   df_psm_final = df_psm_final.filter("additionalAttributes.accession == 'MS:1002355'").select(Fields.USI, "numPeaks", 'HyperScore', col('additionalAttributes.value').cast('float').alias('fdrscore')).sort(desc("HyperScore"))
 
   df_psm_final.show(n=300, truncate=False)
