@@ -14,7 +14,7 @@ from pyspark.sql.types import StringType, BooleanType, DoubleType
 from pyopenms import *
 
 
-def hyper_score(peptide, charge, modifications, mz, masses, intensities):
+def hyper_score(usi, peptide, charge, modifications, mz, masses, intensities):
 
   if len(masses) < 10 or len(intensities) != len(masses):
     return 0
@@ -25,7 +25,20 @@ def hyper_score(peptide, charge, modifications, mz, masses, intensities):
   spectrum.set_peaks([masses, intensities])
   print(spectrum[0].getMZ(), spectrum[0].getIntensity())
 
-  return None
+  # Theroretical spectrum
+  tsg = TheoreticalSpectrumGenerator()
+  thspec = MSSpectrum()
+  p = Param()
+  p.setValue("add_metainfo", "true")
+  tsg.setParameters(p)
+  peptide = AASequence.fromString(peptide)
+  tsg.getSpectrum(thspec, peptide, 1, 1)
+
+  score_engine = HyperScore()
+  score = score_engine.compute(10,True,spectrum, thspec)
+  print(score)
+
+  return score
 
 @click.command('spectrum-ion-annotation', short_help='')
 @click.option('-spectra', help="Input spectra parquet files. ie., /path/to/", required=True)
@@ -38,7 +51,7 @@ def spectrum_ion_annotation(spectra, out_path):
   df_spectra = sql_context.read.parquet(spectra)
 
   udf_hyper_score = udf(hyper_score, DoubleType())
-  df_spectra.withColumn('HyperScore', udf_hyper_score('peptideSequence', 'precursorCharge', 'modifications', 'precursorMz','masses','intensities')).show()
+  df_spectra.withColumn('HyperScore', udf_hyper_score('usi', 'peptideSequence', 'precursorCharge', 'modifications', 'precursorMz','masses','intensities')).show()
 
 
   df_spectra.show(n=300)
