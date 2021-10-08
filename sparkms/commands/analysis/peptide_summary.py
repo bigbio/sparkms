@@ -226,15 +226,17 @@ def peptide_summary(psm, pep, uniprot_map, single_protein_map, min_aa, min_fdr_s
     # df_pep.show(truncate=False, n=100)
     # df_pep.printSchema()
 
-    df_psm_explode_additional_attr = df_psm.select(Fields.USI,
-                                                   explode(Fields.ADDITIONAL_ATTRIBUTES).alias(
-                                                       Fields.ADDITIONAL_ATTRIBUTES))
-    df_psm_fdr = df_psm_explode_additional_attr.filter("additionalAttributes.accession == 'MS:1002355'") \
-        .select(Fields.USI, col('additionalAttributes.value').cast('float').alias('fdrscore'))
+    # df_psm_explode_additional_attr = df_psm.select(Fields.USI,
+    #                                                explode(Fields.ADDITIONAL_ATTRIBUTES).alias(
+    #                                                    Fields.ADDITIONAL_ATTRIBUTES))
+    # df_psm_fdr = df_psm_explode_additional_attr.filter("additionalAttributes.accession == 'MS:1002355'") \
+    #     .select(Fields.USI, col('additionalAttributes.value').cast('float').alias('fdrscore'))
     # df_psm_fdr.show(truncate=False)
 
     # Filter the fdrscore major than 0.0.
-    df_psm_fdr = df_psm_fdr.filter(col('fdrscore') > min_fdr_score).filter(col('fdrscore') <= max_fdr_score)
+
+    # df_psm_fdr = df_psm_fdr.filter(col('fdrscore') > min_fdr_score).filter(col('fdrscore') <= max_fdr_score)
+    df_psm_fdr = df_psm.filter(col('fdrscore') > min_fdr_score).filter(col('fdrscore') <= max_fdr_score)
     # df_psm_fdr.show(truncate=False)
 
     df_pep_psm = df_pep.select(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION,
