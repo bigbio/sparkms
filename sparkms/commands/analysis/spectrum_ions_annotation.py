@@ -5,7 +5,7 @@ import click
 from pyspark.sql import SparkSession, functions
 from pyspark.sql.functions import col
 from pyspark.sql.functions import explode
-from pyspark.sql.functions import udf
+from pyspark.sql.functions import udf, desc
 from pyspark.sql.types import DoubleType
 from pyopenms import *
 
@@ -47,7 +47,7 @@ def hyper_score(usi, peptide, charge, modifications, mz, masses, intensities):
 
   score_engine = HyperScore()
   score = score_engine.compute(0.5,False,spectrum, thspec)
-  print(usi + " score: " + str(score))
+  # print(usi + " score: " + str(score))
 
   return score
 
@@ -65,11 +65,11 @@ def spectrum_ion_annotation(spectra, out_path):
   df_spectra = df_spectra.withColumn('HyperScore', udf_hyper_score('usi', 'peptideSequence', 'precursorCharge', 'modifications', 'precursorMz','masses','intensities'))
 
   df_psm_final = df_spectra.select("usi", "numPeaks", 'HyperScore', explode('properties').alias(Fields.ADDITIONAL_ATTRIBUTES))
-  df_psm_final = df_psm_final.filter("additionalAttributes.accession == 'MS:1002355'").select(Fields.USI, "numPeaks", 'HyperScore', col('additionalAttributes.value').cast('float').alias('fdrscore'))
+  df_psm_final = df_psm_final.filter("additionalAttributes.accession == 'MS:1002355'").select(Fields.USI, "numPeaks", 'HyperScore', col('additionalAttributes.value').cast('float').alias('fdrscore')).sort(desc("HyperScore"))
 
-  df_psm_final.show(n=300)
+  df_psm_final.show(n=300, truncate=False)
 
-  # df_psm_final.write.parquet(out_path, mode='append', compression='snappy')
+  df_psm_final.write.parquet(out_path, mode='append', compression='snappy')
 
 if __name__ == '__main__':
     spectrum_ion_annotation()
