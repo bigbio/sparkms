@@ -151,12 +151,13 @@ class Fields:
 @click.option('-psm', help="Input psm parquet files. ie., /path/to/", required=True)
 @click.option('-pep', help="Input peptide parquet files. ie., /path/to/", required=True)
 @click.option('--uniprot-map', help="uniprot mapping parquet files. ie., /path/to/", required=True)
+@click.option('--single-protein-map', help="single-protein mapping parquet files. ie., /path/to/", required=True)
 @click.option('--min-aa', help="Filter the minimum amino acids for each peptide to be consider (default=7)", default=7,
               required=False)
 @click.option('--min-fdr-score', help="Minimum FDR score (default=0.0)", default=0.0, required=False)
 @click.option('--max-fdr-score', help='Maximum FDR Score default=0.01', default=0.01, required=False)
 @click.option('-o', '--out-path', help="Output path to store parquets. ie., /out/path", required=True)
-def peptide_summary(psm, pep, uniprot_map, min_aa, min_fdr_score, max_fdr_score, out_path):
+def peptide_summary(psm, pep, uniprot_map, single_protein_map, min_aa, min_fdr_score, max_fdr_score, out_path):
     """
   The command peptide_summary use the psm parquet files and peptide evidence parquet files to aggregate all the evidences
   at the peptide level. The psms files contains the link to the specific spectrum, the PSM information including the
@@ -166,6 +167,9 @@ def peptide_summary(psm, pep, uniprot_map, min_aa, min_fdr_score, max_fdr_score,
   :param min_aa: Minimum number of amino acids in peptide
   :param psm: File path of all the psms parquet files
   :param pep: File path of all the peptide evidence parquet files
+  :param uniprot_map: File path of uniprot_map parquet files
+  :param single_protein_map: File path of single_protein_map parquet files
+  :param min_aa:
   :param min_fdr_score: Minimum FDR Score for one PSM
   :param max_fdr_score: Maximum FDR SCore for one PSM
   :param out_path: Output file folder containing the peptide aggregation view.
@@ -179,11 +183,14 @@ def peptide_summary(psm, pep, uniprot_map, min_aa, min_fdr_score, max_fdr_score,
     df_psm_original = sql_context.read.parquet(psm)
     df_pep_original = sql_context.read.parquet(pep)
     df_uniprot_map = sql_context.read.parquet(uniprot_map)
+    df_single_protein_map = sql_context.read.parquet(single_protein_map)
     # df_uniprot_map.show(truncate=False)
 
     udf_get_protein_accession = udf(lambda z: get_protein_accession(z), StringType())
     udf_get_uniprot_protein_accession = udf(
         lambda curr_acc, uniprot_acc: get_uniprot_protein_accession(curr_acc, uniprot_acc), StringType())
+    udf_get_single_protein_of_peptide = udf(
+        lambda curr_acc, single_protein: get_single_protein_of_peptide(curr_acc, single_protein), StringType())
     udf_is_uniprot_accession = udf(lambda z: is_uniprot_accession(z), BooleanType())
     udf_is_multiorganism_peptides = udf(lambda z: is_multiorganism_peptides(z), BooleanType())
     udf_is_uniq_peptide_within_organism = udf(lambda z: is_uniq_peptide_within_organism(z), BooleanType())
@@ -204,9 +211,20 @@ def peptide_summary(psm, pep, uniprot_map, min_aa, min_fdr_score, max_fdr_score,
     columns_to_drop = ['ID', 'AC']
     df_pep = df_pep.drop(*columns_to_drop)
     # df_pep.show(truncate=False, n=100)
-
     # df_pep.exceptAll(df_pep_prot).show(truncate=False, n=1000)
     # df_pep_prot.exceptAll(df_pep).show(truncate=False, n=1000)
+
+    df_pep_single_protein = df_pep.join(df_single_protein_map, df_pep.peptideAccession == df_single_protein_map.peptide,
+                                        'left')
+    # df_pep_single_protein.show(truncate=False, n=100)
+    # df_pep_single_protein.printSchema()
+
+    df_pep = df_pep_single_protein.withColumn(Fields.PROTEIN_ACCESSION,
+                                       udf_get_single_protein_of_peptide(Fields.PROTEIN_ACCESSION, "protein"))
+    columns_to_drop = ['peptide', 'protein']
+    df_pep = df_pep.drop(*columns_to_drop)
+    # df_pep.show(truncate=False, n=100)
+    # df_pep.printSchema()
 
     df_psm_explode_additional_attr = df_psm.select(Fields.USI,
                                                    explode(Fields.ADDITIONAL_ATTRIBUTES).alias(
@@ -374,8 +392,6 @@ def get_protein_accession(s):
     P31271 -> ?  -> P31271
     HXA13_HUMAN -> 2? -> '''
 
-    global uniprot_map_dict
-
     try:
         if s is None:
             return ''
@@ -395,6 +411,15 @@ def get_uniprot_protein_accession(curr_acc, uniprot_acc):
         return curr_acc
     else:
         return uniprot_acc
+
+
+def get_single_protein_of_peptide(curr_acc, single_protein):
+    if single_protein is None:
+        return curr_acc
+    if is_uniprot_accession(curr_acc):
+        return curr_acc
+    else:
+        return single_protein
 
 
 def is_uniprot_accession(acc):

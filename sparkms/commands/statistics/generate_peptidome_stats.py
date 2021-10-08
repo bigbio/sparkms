@@ -1,10 +1,9 @@
-import click
-from pyspark.sql import SparkSession
-from pyspark.sql.functions import size, col, desc, first, count, avg, mean, expr, collect_list
-from pyspark.sql.functions import sum as _sum
 import time
 
-from pyspark.sql.types import IntegerType
+import click
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import size, col, desc, first, count, expr, collect_list
+from pyspark.sql.functions import sum as _sum
 
 from sparkms.commons.Fields import PEPTIDE_SEQUENCE, PROTEIN_ACCESSION, BEST_SEARCH_ENGINE, NUMBER_PSMS, \
   PROJECTS_COUNT, TAXID, ORGANISM, IS_UNIQUE_UNIPROT, PEPTIDE_COUNT, EXTERNAL_PROJECT_ACCESSIONS
@@ -14,24 +13,31 @@ from sparkms.commons.Fields import PEPTIDE_SEQUENCE, PROTEIN_ACCESSION, BEST_SEA
 @click.option('--peptide-folder', help="Input peptide summary folder in parquet files. ie., /path/to/", required=True)
 @click.option('--fdr-threshold', help = 'Maximum FDR Score allowed', default = 0.01)
 @click.option('--species-interest', help = 'File with species/organism of interest', required = False)
-@click.option('--out-statistics-folder', help="Output path to store parquets. ie., /out/path", required=True)
-def generate_peptidome_statistics(peptide_folder, fdr_threshold, species_interest, out_statistics_folder):
+@click.option('--out-path', help="Output path to store parquets. ie., /out/path", required=True)
+def generate_peptidome_statistics(peptide_folder, fdr_threshold, species_interest, out_path):
   """
   The peptide summary to uniprot input files takes the parquet output from the peptide summary analysis pipeline
   into a uniprot output file format that can be use to push data to uniprot.
 
   :param peptide_folder: Folder containing all the peptides
-  :param out_statistics_folder: Output folder containing all the uniprot files
+  :param out_path: Output folder containing all the uniprot files
   :return:
   """
 
   # Create the Spark Context
   sql_context = SparkSession.builder.getOrCreate()
+  sc = sql_context.sparkContext
 
   species = list()
   if species_interest is not None:
-    with open(species_interest, "r") as reader_species:
-      species = [i.strip() for i in reader_species.readlines()]
+    lines = sc.textFile(species_interest)
+    llist = lines.collect()
+    for line in llist:
+      linestrip = line.strip()
+      if len(linestrip) > 0:
+        species.append(linestrip)
+
+  print(species)
 
   # Read the psms and peptide into a dataset
   df_pep_original = sql_context.read.parquet(peptide_folder)
@@ -107,9 +113,17 @@ def generate_peptidome_statistics(peptide_folder, fdr_threshold, species_interes
   df_unique_peptides_per_proteins.show(n=300)
 
   current_time = time.strftime("%Y-%m")
-  df_organisms.toPandas().to_csv(out_statistics_folder + '/organisms-stats-' + current_time + '.tsv', sep='\t', header=True, index=False)
-  df_peptides_per_proteins.toPandas().to_csv(out_statistics_folder + '/peptides-per-proteins-stats-' + current_time + '.tsv', sep="\t", header= True, index=False)
-  df_unique_peptides_per_proteins.toPandas().to_csv(out_statistics_folder + '/unique-peptides-per-proteins-stats-' + current_time + '.tsv', sep="\t", header=True, index=False)
+  # df_organisms.write.csv(out_statistics_folder + '/organisms-stats-' + current_time + '_tsv', sep='\t', header=True, mode='append')
+  # df_peptides_per_proteins.write.csv(out_statistics_folder + '/peptides-per-proteins-stats-' + current_time + '_tsv', sep="\t", header= True, mode='append')
+  # df_unique_peptides_per_proteins.write.csv(out_statistics_folder + '/unique-peptides-per-proteins-stats-' + current_time + '_tsv', sep="\t", header=True, mode='append')
+
+  df_organisms.write.json(out_path + '/organisms-stats-' + current_time, mode='append', compression='gzip',
+                          ignoreNullFields=False)
+  df_peptides_per_proteins.write.json(out_path + '/peptides-per-proteins-stats-' + current_time,
+                                      mode='append', compression='gzip', ignoreNullFields=False)
+  df_unique_peptides_per_proteins.write.json(out_path + '/unique-peptides-per-proteins-stats-' + current_time,
+                                             mode='append', compression='gzip', ignoreNullFields=False)
+
 
 if __name__ == '__main__':
     generate_peptidome_statistics()
