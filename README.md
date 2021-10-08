@@ -14,6 +14,7 @@ The sparkMS package allows to perform data analysis of MS-based proteomics data 
 - Spark **(3.0.0)**
 - pyspark==3.0.0
 - pyarrow==2.0.0
+- pyopenms
 
 **Note**: The software versions are crucial for the package and scripts to work. An small change in the versions of Spark or pyspark can make the tool fail.
 

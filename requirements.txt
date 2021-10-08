@@ -6,3 +6,4 @@ pyteomics
 pandas
 biopython
 annoy
+pyopenms
