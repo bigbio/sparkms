@@ -13,11 +13,11 @@ def runner():
 
 
 def test_psm_parquet(runner):
-    input_file = 'resources/sample_jsons/PXD002681/PXD002681_56166_PrideMongoPsmSummaryEvidence.json'
+    input_file = 'resources/sample_jsons/'
     reference_out_file = 'resources/sample_parquets/psm'
     out_path = 'tmp' + str(round(time.time()))
     os.mkdir(out_path)
-    result = runner.invoke(json_to_parquet, ['-i', input_file, '-o', out_path])
+    result = runner.invoke(json_to_parquet, ['-i', input_file, '-o', out_path, '-d "spectra"'])
     print(result)
     generated_out = parquet.read_table(out_path)
     reference_out = parquet.read_table(reference_out_file)
@@ -26,11 +26,11 @@ def test_psm_parquet(runner):
 
 
 def test_peptide_parquet(runner):
-    input_file = 'resources/sample_jsons/PXD002681/PXD002681_56166_PrideMongoPeptideEvidence.json'
+    input_file = 'resources/sample_jsons/'
     reference_out_file = 'resources/sample_parquets/peptide'
     out_path = 'tmp' + str(round(time.time()))
     os.mkdir(out_path)
-    runner.invoke(json_to_parquet, ['-i', input_file, '-o', out_path])
+    runner.invoke(json_to_parquet, ['-i', input_file, '-o', out_path, '-d "peptide"'])
     generated_out = parquet.read_table(out_path)
     reference_out = parquet.read_table(reference_out_file)
     shutil.rmtree(out_path)
@@ -38,11 +38,11 @@ def test_peptide_parquet(runner):
 
 
 def test_protein_parquet(runner):
-    input_file = 'resources/sample_jsons/PXD002681/PXD002681_56166_PrideMongoProteinEvidence.json'
+    input_file = 'resources/sample_jsons/'
     reference_out_file = 'resources/sample_parquets/protein'
     out_path = 'tmp' + str(round(time.time()))
     os.mkdir(out_path)
-    result = runner.invoke(json_to_parquet, ['-i', input_file, '-o', out_path])
+    result = runner.invoke(json_to_parquet, ['-i', input_file, '-o', out_path, '-d "protein"'])
     print(result)
     generated_out = parquet.read_table(out_path)
     reference_out = parquet.read_table(reference_out_file)
