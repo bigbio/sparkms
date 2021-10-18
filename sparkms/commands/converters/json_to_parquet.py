@@ -26,24 +26,10 @@ def json_to_parquet(input_path, data_object, out_path):
 
   file_path = input_path + "**/" + pattern;
   sql_context = SparkSession.builder.getOrCreate()
-  files = glob.glob(file_path, recursive=True)
-  if len(files) == 0:
-    raise RuntimeError("The files provided should be json extension")
-
-  for f in files:
-    try:
-      print("======= processing:" + f)
-      df = sql_context.read.json(path=f, dropFieldIfAllNull=True)
-      if df.rdd.isEmpty():
-        continue
-
-      df.write.parquet(out_path, mode='append', partitionBy=[Fields.EXTERNAL_PROJECT_ACCESSION, Fields.ASSAY_ACCESSION],
+  print("======= processing:" + file_path)
+  df = sql_context.read.json(path=file_path, dropFieldIfAllNull=True)
+  df.write.parquet(out_path, mode='append', partitionBy=[Fields.EXTERNAL_PROJECT_ACCESSION, Fields.ASSAY_ACCESSION],
                        compression='snappy')
-
-    except Exception as e:
-      print("** Error while processing: " + f)
-      print(e)
-
 
 if __name__ == "__main__":
   json_to_parquet()
