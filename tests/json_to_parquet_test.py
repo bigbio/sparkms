@@ -3,8 +3,9 @@ import shutil
 import time
 import pytest
 from click.testing import CliRunner
-from pyarrow import parquet
+
 from sparkms.commands.converters.json_to_parquet import json_to_parquet
+from pyspark.sql import SparkSession
 
 
 @pytest.fixture(scope="module")
@@ -13,40 +14,37 @@ def runner():
 
 
 def test_psm_parquet(runner):
-    input_file = 'resources/sample_jsons/PXD002681_56166_PrideMongoPsmSummaryEvidence.json'
-    reference_out_file = 'resources/sample_parquets/psm'
+    input_file = 'resources/sample_jsons/'
+
     out_path = 'tmp' + str(round(time.time()))
     os.mkdir(out_path)
-    result = runner.invoke(json_to_parquet, ['-i', input_file, '-o', out_path])
-    print(result)
-    generated_out = parquet.read_table(out_path)
-    reference_out = parquet.read_table(reference_out_file)
-    shutil.rmtree(out_path)
-    assert reference_out.equals(generated_out)
+    result = runner.invoke(json_to_parquet, ['-i', input_file, '-o', out_path, '-d','spectra'])
 
+    sql_context = SparkSession.builder.getOrCreate()
+    df_spectra_original = sql_context.read.parquet(out_path)
+    assert df_spectra_original.count() == 34978
+    shutil.rmtree(out_path)
 
 def test_peptide_parquet(runner):
-    input_file = 'resources/sample_jsons/PXD002681_56166_PrideMongoPeptideEvidence.json'
-    reference_out_file = 'resources/sample_parquets/peptide'
+    input_file = 'resources/sample_jsons/'
+
     out_path = 'tmp' + str(round(time.time()))
     os.mkdir(out_path)
-    runner.invoke(json_to_parquet, ['-i', input_file, '-o', out_path])
-    generated_out = parquet.read_table(out_path)
-    reference_out = parquet.read_table(reference_out_file)
-    shutil.rmtree(out_path)
-    assert reference_out.equals(generated_out)
+    runner.invoke(json_to_parquet, ['-i', input_file, '-o', out_path, '-d','peptide'])
 
+    sql_context = SparkSession.builder.getOrCreate()
+    df_pep_original = sql_context.read.parquet(out_path)
+    assert df_pep_original.count() == 2641
+    shutil.rmtree(out_path)
 
 def test_protein_parquet(runner):
-    input_file = 'resources/sample_jsons/PXD002681_56166_PrideMongoProteinEvidence.json'
-    reference_out_file = 'resources/sample_parquets/protein'
+    input_file = 'resources/sample_jsons/'
+
     out_path = 'tmp' + str(round(time.time()))
     os.mkdir(out_path)
-    result = runner.invoke(json_to_parquet, ['-i', input_file, '-o', out_path])
-    print(result)
-    generated_out = parquet.read_table(out_path)
-    reference_out = parquet.read_table(reference_out_file)
+    result = runner.invoke(json_to_parquet, ['-i', input_file, '-o', out_path, '-d','protein'])
+    sql_context = SparkSession.builder.getOrCreate()
+    df_protein_original = sql_context.read.parquet(out_path)
+    assert df_protein_original.count() == 294
     shutil.rmtree(out_path)
-    assert reference_out.equals(generated_out)
-
 
