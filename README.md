@@ -24,7 +24,7 @@ The sparkMS package allows to perform data analysis of MS-based proteomics data 
 
 ## Building the conda environment
 
-Building the conda enviroment
+Building the conda environment
 
 ```asciidoc
 conda env create -f environment.yml
