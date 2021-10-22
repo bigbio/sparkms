@@ -6,9 +6,13 @@ channels:
   - bioconda
   - defaults
 dependencies:
-  - conda-forge::python=3.7
-  - conda-forge::pyspark
+  - conda-forge::python=3.8.5
+  - conda-forge::pyspark=3.0.0
   - conda-forge::click=7.1.2
   - bioconda::msstitch
-  - bioconda::pyteomics
+  - bioconda::pyteomics=4.4.1
+  - bioconda::pyopenms
+  - conda-forge::python-hdfs=2.6.0
+  - conda-forge::pandas
+
 
