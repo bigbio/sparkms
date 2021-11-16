@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source /nfs/software/pride/scripts/export_env_vars
+
 # Convert Spectrum data from Assays into Parquet
 
 PYSPARK_PYTHON=./environment/bin/python \
