@@ -67,9 +67,12 @@ def spectrum_ion_annotation(spectra, out_path):
   df_psm_final = df_spectra.select("usi", "peptideSequence", "numPeaks", 'HyperScore', explode('properties').alias(Fields.ADDITIONAL_ATTRIBUTES))
   df_psm_final = df_psm_final.filter("additionalAttributes.accession == 'MS:1002355'").select(Fields.USI, "peptideSequence", "numPeaks", 'HyperScore', col('additionalAttributes.value').cast('float').alias('fdrscore')).sort(desc("HyperScore"))
 
-  df_psm_final.show(n=300, truncate=False)
-
   df_psm_final.write.parquet(out_path, mode='append', compression='snappy')
+
+  # This is important if you print before writing the analysis code is executed twice.
+
+  df_print = sql_context.read.parquet(out_path)
+  df_print.show(truncate=False, n=30000)
 
 if __name__ == '__main__':
     spectrum_ion_annotation()
