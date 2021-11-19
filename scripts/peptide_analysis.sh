@@ -12,5 +12,5 @@ PYSPARK_PYTHON=./environment/bin/python \
 --executor-memory 49g  --driver-memory 50g --executor-cores 5 --num-executors 50 \
 --conf spark.driver.memoryOverhead=20480  --conf spark.executor.memoryOverhead=30480 --conf spark.driver.maxResultSize=0 \
 --archives /homes/pst_prd/tools/sparkms.tar.gz#environment \
-/homes/pst_prd/tools/sparkms/sparkms/commands/converters/tsv_to_parquet.py -psm '/user/pst_prd/pride/parquets/spectra_ions/' -pep  '/user/pst_prd/pride/parquests/peptides/' \
+/homes/pst_prd/tools/sparkms/sparkms/commands/analysis/peptide_summary.py -psm '/user/pst_prd/pride/parquets/spectra_ions/' -pep  '/user/pst_prd/pride/parquests/peptides/' \
  --uniprot-map '/user/pst_prd/pride/parquets/uniprot_swissprot/' --single-protein-map '/user/pst_prd/pride/parquets/peptide_single/' -o '/user/pst_prd/pride/parquets/peptide_maps/' > peptide_analysis.log 2>&1 &
