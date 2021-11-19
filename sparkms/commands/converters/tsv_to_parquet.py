@@ -7,7 +7,9 @@ from pyspark.sql import SparkSession
 @click.option('-o', '--out-path', help="Output path to store parquets. ie., /out/path", required=True)
 def tsv_to_parquet(input_tsv, out_path):
     """
-    This method read a tab delimited file and converts to parquet
+    This method read a tab delimited file and converts to parquet. This script is used to translate the peptide to protein
+    map data/peptides.tsv into a parquet file.
+
     :param i: Input tsv file  ie., peptides.tsv
     :param o: Output path to store parquets. ie., /out/path
     :return:
