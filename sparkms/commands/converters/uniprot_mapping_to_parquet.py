@@ -82,6 +82,9 @@ def uniprot_mapping_to_parquet(input_id_mapping, uniprot_fasta_folder, out_path)
 
     complete_uniprot = df_uniprot.join(uniprot_fasta, df_uniprot.AC == uniprot_fasta.Accession, "left").drop(
         uniprot_fasta.Accession)
+
+    # This delete duplicated records by accession
+    complete_uniprot = complete_uniprot.dropDuplicates(['AC'])
     complete_uniprot.write.parquet(out_path, mode='append', compression='snappy')
 
     print_df = sql_context.read.parquet(out_path)

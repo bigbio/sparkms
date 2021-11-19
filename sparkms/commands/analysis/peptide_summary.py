@@ -11,6 +11,7 @@ from pyspark.sql.functions import size
 from pyspark.sql.functions import struct
 from pyspark.sql.functions import udf
 from pyspark.sql.types import StringType, BooleanType
+from pyspark.sql.types import DoubleType
 
 
 class Fields:
@@ -146,6 +147,10 @@ class Fields:
     SPECTRA_USI: Final = "spectraUsi"
     PSM_SUMMARY_FILE: Final = "fileName"
 
+def hyper_score_validation(hyper_score, fdrscore):
+  if hyper_score <= 0.0:
+    hyper_score = 1 - fdrscore
+  return hyper_score
 
 @click.command('peptide-summary', short_help='')
 @click.option('-psm', help="Input psm parquet files. ie., /path/to/", required=True)
@@ -185,6 +190,11 @@ def peptide_summary(psm, pep, uniprot_map, single_protein_map, min_aa, min_fdr_s
     df_uniprot_map = sql_context.read.parquet(uniprot_map)
     df_single_protein_map = sql_context.read.parquet(single_protein_map)
     # df_uniprot_map.show(truncate=False)
+
+    udf_hyper_score = udf(hyper_score_validation, DoubleType())
+    df_psm_original = df_psm_original.withColumn('HyperScore', udf_hyper_score('HyperScore', 'fdrscore'))
+    df_psm_original.select('HyperScore').show(truncate=False, n=1000)
+
 
     udf_get_protein_accession = udf(lambda z: get_protein_accession(z), StringType())
     udf_get_uniprot_protein_accession = udf(
@@ -226,49 +236,53 @@ def peptide_summary(psm, pep, uniprot_map, single_protein_map, min_aa, min_fdr_s
     # df_pep.show(truncate=False, n=100)
     # df_pep.printSchema()
 
-    df_psm_explode_additional_attr = df_psm.select(Fields.USI,
-                                                   explode(Fields.ADDITIONAL_ATTRIBUTES).alias(
-                                                       Fields.ADDITIONAL_ATTRIBUTES))
-    df_psm_fdr = df_psm_explode_additional_attr.filter("additionalAttributes.accession == 'MS:1002355'") \
-        .select(Fields.USI, col('additionalAttributes.value').cast('float').alias('fdrscore'))
+    # df_psm_explode_additional_attr = df_psm.select(Fields.USI,
+    #                                                explode(Fields.ADDITIONAL_ATTRIBUTES).alias(
+    #                                                    Fields.ADDITIONAL_ATTRIBUTES))
+    # df_psm_fdr = df_psm_explode_additional_attr.filter("additionalAttributes.accession == 'MS:1002355'") \
+    #     .select(Fields.USI, col('additionalAttributes.value').cast('float').alias('fdrscore'))
     # df_psm_fdr.show(truncate=False)
 
     # Filter the fdrscore major than 0.0.
-    df_psm_fdr = df_psm_fdr.filter(col('fdrscore') > min_fdr_score).filter(col('fdrscore') <= max_fdr_score)
-    # df_psm_fdr.show(truncate=False)
+    df_psm_fdr = df_psm.filter(col('fdrscore') > min_fdr_score).filter(col('fdrscore') <= max_fdr_score)
+    print("======= processing psm fdr:" + str(df_psm_fdr.count()))
+    df_psm_fdr.show(truncate=False)
 
-    df_pep_psm = df_pep.select(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION,
-                               explode(Fields.PSM_SPECTRUM_ACCESSIONS).alias("psm"))
-    # df_pep_psm.show(truncate=False)
+    df_pep_psm = df_pep.select(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION, explode(Fields.PSM_SPECTRUM_ACCESSIONS).alias("psm"))
+    print("======= processing peptide psm:" + str(df_pep_psm.count()))
+    df_pep_psm.show(truncate=False)
 
     # This is the main step of the algorithm. Peptides are group by PeptideSequence and ProteinAccession accession.
     # After the grouping the number of psms are counted in the the psms_count variable.
     df_pep_psm_count = df_pep_psm.groupby(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION) \
         .agg(functions.collect_set('psm.usi').alias('usis')) \
         .select(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION, size('usis').alias('psms_count'))
-    # df_pep_psm_count.show(truncate=False)
+    print("===== processing peptide psms count:" + str(df_pep_psm_count.count()))
+    df_pep_psm_count.show(truncate=False)
 
     df_pep_usi = df_pep_psm.join(df_psm_fdr, (df_psm_fdr.usi == df_pep_psm['psm.usi'])) \
-        .groupby(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION, 'fdrscore') \
+        .groupby(df_pep_psm.peptideSequence, df_pep_psm.proteinAccession, 'fdrscore', 'HyperScore') \
         .agg(functions.collect_set(Fields.USI)) \
-        .toDF(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION, 'fdrscore', 'usis')
-    # df_pep_usi.filter("proteinAccession == 'Q5XI78'").show(truncate=False)
+        .toDF(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION, 'fdrscore', 'HyperScore', 'usis')
+    print("======= processing peptide + psms:" + str(df_pep_usi.count()))
+    df_pep_usi.filter("proteinAccession == 'P55786'").show(truncate=False)
 
     df_pep_usi_best_fdr = df_pep_usi.groupby(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION) \
-        .agg(functions.min('fdrscore')).toDF(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION, "min_fdrscore")
-    # df_pep_usi_best_fdr.filter("proteinAccession == 'Q5XI78'").show(truncate=False)
+        .agg(functions.max('HyperScore')).toDF(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION, "max_HyperScore")
+    print("======= processing df_pep_usi_best_fdr:" + str(df_pep_usi_best_fdr.count()))
+    df_pep_usi_best_fdr.filter("proteinAccession == 'P55786'").show(truncate=False)
 
     df_pep_best_usis = df_pep_usi_best_fdr.join(df_pep_usi,
                                                 (df_pep_usi.peptideSequence == df_pep_usi_best_fdr.peptideSequence) &
                                                 (df_pep_usi.proteinAccession == df_pep_usi_best_fdr.proteinAccession) &
-                                                (df_pep_usi.fdrscore == df_pep_usi_best_fdr.min_fdrscore)) \
-        .select(df_pep_usi.peptideSequence, df_pep_usi.proteinAccession, 'usis')
-    # df_pep_best_usis.show(truncate=False)
+                                                (df_pep_usi.HyperScore == df_pep_usi_best_fdr.max_HyperScore)) \
+        .select(df_pep_usi.peptideSequence, df_pep_usi.proteinAccession, 'usis', "max_HyperScore")
+    print("==== processing df_pep_best_usis:" + str(df_pep_usi_best_fdr.count()))
+    df_pep_best_usis.show(truncate=False)
 
     df_pep_explode_additional_attr = df_pep.select(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION,
                                                    Fields.EXTERNAL_PROJECT_ACCESSION,
-                                                   explode(Fields.ADDITIONAL_ATTRIBUTES).alias(
-                                                       Fields.ADDITIONAL_ATTRIBUTES))
+                                                   explode(Fields.ADDITIONAL_ATTRIBUTES).alias(Fields.ADDITIONAL_ATTRIBUTES))
     # df_pep_explode_additional_attr.show(truncate=False)
 
     df_pep_fdr = df_pep_explode_additional_attr.filter("additionalAttributes.accession == 'MS:1002360'") \
@@ -281,13 +295,11 @@ def peptide_summary(psm, pep, uniprot_map, single_protein_map, min_aa, min_fdr_s
 
     df_pep_summary_first = df_pep_psm.join(df_pep_fdr, (df_pep_psm.peptideSequence == df_pep_fdr.peptideSequence) &
                                            (df_pep_psm.proteinAccession == df_pep_fdr.proteinAccession)) \
-        .select(df_pep_psm.peptideSequence, df_pep_psm.proteinAccession,
-                Fields.EXTERNAL_PROJECT_ACCESSION, 'fdrscore') \
+        .select(df_pep_psm.peptideSequence, df_pep_psm.proteinAccession, Fields.EXTERNAL_PROJECT_ACCESSION, 'fdrscore') \
         .groupby(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION) \
         .agg(functions.collect_set(Fields.EXTERNAL_PROJECT_ACCESSION), functions.min('fdrscore')) \
-        .toDF(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION, Fields.EXTERNAL_PROJECT_ACCESSIONS,
-              'best_search_engine_score')
-    # df_pep_summary_first.show(truncate=False)
+        .toDF(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION, Fields.EXTERNAL_PROJECT_ACCESSIONS,'best_search_engine_score')
+    df_pep_summary_first.show(truncate=False)
 
     df_pep_summary_second = df_pep_summary_first.join(df_pep_psm_count,
                                                       (df_pep_summary_first.peptideSequence == df_pep_psm_count.peptideSequence) &
@@ -300,10 +312,10 @@ def peptide_summary(psm, pep, uniprot_map, single_protein_map, min_aa, min_fdr_s
     df_pep_summary_third = df_pep_summary_second.join(df_pep_best_usis,
                                                       (df_pep_summary_second.peptideSequence == df_pep_best_usis.peptideSequence) &
                                                       (df_pep_summary_second.proteinAccession == df_pep_best_usis.proteinAccession)) \
-        .select(df_pep_summary_second.peptideSequence, df_pep_summary_second.proteinAccession,
-                Fields.EXTERNAL_PROJECT_ACCESSIONS,
-                'best_search_engine_score', 'psms_count', col('usis').alias('best_usis'))
-    # df_pep_summary_third.show(truncate=False)
+        .select(df_pep_summary_second.peptideSequence, df_pep_summary_second.proteinAccession, Fields.EXTERNAL_PROJECT_ACCESSIONS,
+                'best_search_engine_score', 'psms_count', col('usis').alias('best_usis'), "max_HyperScore")
+    print("===== df_pep_summary_third:" + str(df_pep_summary_third.count()))
+    df_pep_summary_third.show(truncate=False)
 
     df_pep_ptm = df_pep.select(Fields.PEPTIDE_SEQUENCE, Fields.PROTEIN_ACCESSION, Fields.EXTERNAL_PROJECT_ACCESSION,
                                explode(Fields.PROJECT_IDENTIFIED_PTM).alias("ptms"))
@@ -335,7 +347,7 @@ def peptide_summary(psm, pep, uniprot_map, single_protein_map, min_aa, min_fdr_s
                                                     (df_pep_summary_third.proteinAccession == df_pep_ptm_four.proteinAccession)) \
         .select(df_pep_summary_third.peptideSequence, df_pep_summary_third.proteinAccession,
                 Fields.EXTERNAL_PROJECT_ACCESSIONS,
-                'best_search_engine_score', 'psms_count', 'best_usis', 'ptms_map')
+                'best_search_engine_score', 'psms_count', 'best_usis', 'ptms_map', "max_HyperScore")
 
     df_pep_summary_uniprot_acc = df_pep_summary_four.withColumn('is_uniprot_accession',
                                                                 udf_is_uniprot_accession(Fields.PROTEIN_ACCESSION))
@@ -383,7 +395,7 @@ def peptide_summary(psm, pep, uniprot_map, single_protein_map, min_aa, min_fdr_s
     df_pepsummary_final_two.write.parquet(out_path, mode='append', compression='snappy')
 
     df_print = sql_context.read.parquet(out_path)
-    df_print.show(truncate=False, n=30000)
+    df_print.show(truncate=False, n=100)
 
 
 def get_protein_accession(s):
