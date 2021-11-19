@@ -13,41 +13,33 @@ from sparkms.commons import Fields
 
 
 def hyper_score(usi, peptide, charge, modifications, mz, masses, intensities):
-
+  score = 0.0
   if masses == None or intensities == None or len(masses) < 15 or len(intensities) != len(masses):
-    return -1.0
+    return 0.0
 
   spectrum = MSSpectrum()
   # print(masses)
   # print(intensities)
   # print(modifications)
 
-  spectrum.set_peaks([masses, intensities])
-  # print(spectrum[0].getMZ(), spectrum[0].getIntensity())
+  try:
+    spectrum.set_peaks([masses, intensities])
 
+    # Theroretical spectrum
+    tsg = TheoreticalSpectrumGenerator()
+    thspec = MSSpectrum()
+    p = Param()
+    p.setValue("add_metainfo", "true")
+    tsg.setParameters(p)
+    peptide = AASequence.fromString(peptide)
 
+    tsg.getSpectrum(thspec, peptide, 1, int(charge))
 
-  # Theroretical spectrum
-  tsg = TheoreticalSpectrumGenerator()
-  thspec = MSSpectrum()
-  p = Param()
-  p.setValue("add_metainfo", "true")
-  tsg.setParameters(p)
-  peptide = AASequence.fromString(peptide)
-
-  # # Add PTMs
-  # for mod in modifications:
-  #   mass = mod['modification']['value']
-  #   for position in mod['positionMap']:
-  #     pos = position['key']
-  #     print(mass + " " + str(pos))
-  #     if position == 0:
-
-  tsg.getSpectrum(thspec, peptide, 1, int(charge))
-
-  score_engine = HyperScore()
-  score = score_engine.compute(20,True,spectrum, thspec)
-  # print(usi + " score: " + str(score))
+    score_engine = HyperScore()
+    score = score_engine.compute(20, True, spectrum, thspec)
+    # print(usi + " score: " + str(score))
+  except:
+    print("Spectrum -- " + usi)
 
   return score
 
