@@ -12,4 +12,4 @@ PYSPARK_PYTHON=./environment/bin/python \
 --executor-memory 49g  --driver-memory 50g --executor-cores 5 --num-executors 50 \
 --conf spark.driver.memoryOverhead=20480  --conf spark.executor.memoryOverhead=30480 --conf spark.driver.maxResultSize=0 \
 --archives /homes/pst_prd/tools/sparkms.tar.gz#environment \
-/homes/pst_prd/tools/sparkms/sparkms/commands/converters/tsv_to_parquet.py -d 'peptide' -i '/user/pst_prd/pride/additional_data/idmapping_selected.tab.2015_03.gz' -s '/user/pst_prd/pride/additional_data/' -o '/user/pst_prd/pride/parquets/uniprot_swissprot/' > convertuniprot_parquet.log 2>&1 &
+/homes/pst_prd/tools/sparkms/sparkms/commands/converters/tsv_to_parquet.py -i '/user/pst_prd/pride/additional_data/idmapping_selected.tab.2015_03.gz' -s '/user/pst_prd/pride/additional_data/' -o '/user/pst_prd/pride/parquets/uniprot_swissprot/' > convertuniprot_parquet.log 2>&1 &
