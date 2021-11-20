@@ -22,7 +22,7 @@ def test_psm_parquet(runner):
 
     sql_context = SparkSession.builder.getOrCreate()
     df_spectra_original = sql_context.read.parquet(out_path)
-    assert df_spectra_original.count() == 34978
+    assert df_spectra_original.count() == 1090
     shutil.rmtree(out_path)
 
 def test_peptide_parquet(runner):
