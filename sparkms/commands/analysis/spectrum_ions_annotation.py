@@ -23,6 +23,14 @@ def hyper_score(usi, peptide, charge, masses, intensities):
   # print(modifications)
 
   try:
+    # convert masses from string to float
+    masses = np.array(masses)
+    masses = masses.astype(np.float)
+
+    # convert masses from string to float
+    intensities = np.array(intensities)
+    intensities = intensities.astype(np.float)
+
     spectrum.set_peaks([masses, intensities])
 
     # Theroretical spectrum
