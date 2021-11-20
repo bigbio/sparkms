@@ -12,7 +12,7 @@ from pyopenms import *
 from sparkms.commons import Fields
 
 
-def hyper_score(usi, peptide, charge, modifications, mz, masses, intensities):
+def hyper_score(usi, peptide, charge, masses, intensities):
   score = 0.0
   if masses == None or intensities == None or len(masses) < 15 or len(intensities) != len(masses):
     return 0.0
@@ -39,7 +39,7 @@ def hyper_score(usi, peptide, charge, modifications, mz, masses, intensities):
     score = score_engine.compute(20, True, spectrum, thspec)
     # print(usi + " score: " + str(score))
   except:
-    print("Spectrum -- " + usi)
+    print("Spectrum {} -- masses {} -- intensities {}".format(usi, masses, intensities))
 
   return score
 
@@ -54,7 +54,7 @@ def spectrum_ion_annotation(spectra, out_path):
   df_spectra = sql_context.read.parquet(spectra)
 
   udf_hyper_score = udf(hyper_score, DoubleType())
-  df_spectra = df_spectra.withColumn('HyperScore', udf_hyper_score('usi', 'peptideSequence', 'precursorCharge', 'modifications', 'precursorMz','masses','intensities'))
+  df_spectra = df_spectra.withColumn('HyperScore', udf_hyper_score('usi', 'peptideSequence', 'precursorCharge', 'masses','intensities'))
 
   df_psm_final = df_spectra.select("usi", "peptideSequence", "numPeaks", 'HyperScore', explode('properties').alias(Fields.ADDITIONAL_ATTRIBUTES))
   df_psm_final = df_psm_final.filter("additionalAttributes.accession == 'MS:1002355'").select(Fields.USI, "peptideSequence", "numPeaks", 'HyperScore', col('additionalAttributes.value').cast('float').alias('fdrscore')).sort(desc("HyperScore"))
