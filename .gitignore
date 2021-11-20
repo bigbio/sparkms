@@ -133,3 +133,4 @@ dmypy.json
 .idea/*
 *out_path*
 sparkms.tar.gz
+/tests/resources/sample_jsons/PXD017704/PXD017704_120380_ArchiveSpectrum-complete.json
