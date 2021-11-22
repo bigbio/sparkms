@@ -26,7 +26,7 @@ def peptide_summary_unknown(peptide_folder, fdr_threshold, out_peptide_file):
   df_pep_original = sql_context.read.parquet(peptide_folder)
 
   df_pep_original_non_uniprot =  df_pep_original.filter(df_pep_original.is_uniprot_accession == False)\
-     .filter(df_pep_original.best_search_engine_score <= fdr_threshold).select(col("peptideSequence")).distinct()
+     .filter(df_pep_original.best_search_engine_score <= fdr_threshold).select(col("peptideSequence"), col("proteinAccession")).distinct()
   df_pep_original_non_uniprot.show(n=300)
 
   df_pep_original_non_uniprot.toPandas().to_csv(out_peptide_file, sep='\t', header=True, index=False)

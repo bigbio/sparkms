@@ -1,8 +1,11 @@
+from functools import reduce
+
 import click
-from pyspark.sql import SparkSession
+from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import trim, length
 from pyspark.sql.functions import col
 from pyspark.sql.functions import lower
+import pyspark.sql.functions as f
 
 from sparkms.commons.uniprot_functions import get_protein_name_from_header, get_info_from_header, get_PE
 
@@ -69,7 +72,27 @@ def uniprot_mapping_to_parquet(input_id_mapping, uniprot_fasta_folder, out_path)
     sql_context = SparkSession.builder.getOrCreate()
     print("======= processing:" + input_id_mapping)
     df = sql_context.read.csv(path=input_id_mapping, sep='\t', header=False)
-    df = df.select(df.columns[:2]).toDF("AC", "ID")
+    df = df.select(df.columns[:21]).toDF("AC", "ID","GeneID","RefSeq","GI","PDB","GO","UniRef100","UniRef90","UniRef50","UniParc","PIR","NCBI-taxon","MIM","UniGene",
+                                        "PubMed","EMBL","EMBL-CDS","Ensembl","Ensembl_TRS","Ensembl_PRO")
+
+    df_uniprot_id= df.select(col("AC"),col("ID"))
+    df_uniprot_id.show(n=30, truncate=False)
+    df_ref_seq   = df.select(col("AC"), col("RefSeq")).withColumnRenamed("RefSeq", "ID")
+    df_ref_seq.show(n=30, truncate=False)
+    df_ensembl_seq = df.select(col("AC"), col("Ensembl_PRO"))
+    df_ensembl_seq = df_ensembl_seq.select("AC", f.split("Ensembl_PRO", "; ").alias("letters"),
+                          f.posexplode(f.split("Ensembl_PRO", "; ")).alias("pos", "val")).select("AC","val")
+    df_ensembl_seq = df_ensembl_seq.withColumnRenamed("val", "ID")
+    # df_ensembl_seq.show(n=40, truncate=False)
+
+    # create list of dataframes
+    dfs = [df_uniprot_id, df_ref_seq, df_ensembl_seq]
+
+    # create merged dataframe
+    df = reduce(DataFrame.unionAll, dfs)
+    # df_ensembl_seq.show(n=3000, truncate=False)
+
+
     df_uniprot = df.select([trim(col(c)).alias(c) for c in df.columns])
     df_uniprot.show(n=30, truncate=False)
 
@@ -78,13 +101,13 @@ def uniprot_mapping_to_parquet(input_id_mapping, uniprot_fasta_folder, out_path)
     uniprot_fasta = uniprot_fasta.filter(lower(uniprot_fasta.value).contains(">"))
     cols = ["Accession", "ProteinName", "Gene", "Organism", "TaxId", "EvidenceLevel"]
     uniprot_fasta = uniprot_fasta.rdd.map(uniprot_header_to_df).toDF().toDF(*cols)
-    uniprot_fasta.show(n=30)
+    # uniprot_fasta.show(n=30)
 
-    complete_uniprot = df_uniprot.join(uniprot_fasta, df_uniprot.AC == uniprot_fasta.Accession, "left").drop(
-        uniprot_fasta.Accession)
+    complete_uniprot = df_uniprot.join(uniprot_fasta, df_uniprot.AC == uniprot_fasta.Accession, "left").drop(uniprot_fasta.Accession)
 
     # This delete duplicated records by accession
-    complete_uniprot = complete_uniprot.dropDuplicates(['AC'])
+    complete_uniprot = complete_uniprot.dropDuplicates(['AC', 'ID'])
+    complete_uniprot = complete_uniprot.filter(complete_uniprot.ID.isNotNull())
     complete_uniprot.write.parquet(out_path, mode='append', compression='snappy')
 
     print_df = sql_context.read.parquet(out_path)
