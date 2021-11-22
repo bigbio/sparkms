@@ -411,6 +411,10 @@ def get_protein_accession(s):
         a = s_upper.split('|')
         if len(a) == 3 and (a[0] == 'SP' or a[0] == 'TR'):
             return a[1]
+        elif len(a) > 3 and (a[0] =='GI'):
+            return a[3]
+        elif len(a) == 2 and (a[0] == 'REF'):
+            return a[1]
         else:
             return s
     except:
