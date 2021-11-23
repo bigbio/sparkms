@@ -72,8 +72,7 @@ def generate_peptidome_statistics(peptide_folder, fdr_threshold, species_interes
   Get number of unique peptides, peptides that map to only one protein
   """
 
-  num_unique_peptides = df_pep_filtered.filter(df_pep_filtered.is_uniq_peptide_within_organism == True).groupBy(col(PEPTIDE_SEQUENCE), col(PROTEIN_ACCESSION)).count().select(
-    col(PROTEIN_ACCESSION), col(PEPTIDE_SEQUENCE)).distinct().count()
+  num_unique_peptides = df_pep_filtered.filter(df_pep_filtered.is_uniq_peptide_within_organism == True).count()
 
   print("Projects: " + str(num_projects))
   print("Proteins: " + str(num_proteins))
@@ -113,16 +112,22 @@ def generate_peptidome_statistics(peptide_folder, fdr_threshold, species_interes
   df_unique_peptides_per_proteins.show(n=300)
 
   current_time = time.strftime("%Y-%m")
-  # df_organisms.write.csv(out_statistics_folder + '/organisms-stats-' + current_time + '_tsv', sep='\t', header=True, mode='append')
-  # df_peptides_per_proteins.write.csv(out_statistics_folder + '/peptides-per-proteins-stats-' + current_time + '_tsv', sep="\t", header= True, mode='append')
-  # df_unique_peptides_per_proteins.write.csv(out_statistics_folder + '/unique-peptides-per-proteins-stats-' + current_time + '_tsv', sep="\t", header=True, mode='append')
+  df_organisms.toPandas().to_csv("{}/organisms-stats-{}.tsv".format(out_path,current_time), sep='\t', header=True, index=False)
+  df_peptides_per_proteins.toPandas().to_csv("{}/peptides-per-proteins-stats-{}.tsv".format(out_path, current_time), sep='\t', header=True,
+                                 index=False)
+  df_unique_peptides_per_proteins.toPandas().to_csv("{}/unique-peptides-per-proteins-stats-{}.tsv".format(out_path, current_time),
+                                             sep='\t', header=True,
+                                             index=False)
+  # df_organisms.write.csv(out_path + '/organisms-stats-' + current_time + '_tsv', sep='\t', header=True, mode='append')
+  # df_peptides_per_proteins.write.csv(out_path + '/peptides-per-proteins-stats-' + current_time + '_tsv', sep="\t", header= True, mode='append')
+  # df_unique_peptides_per_proteins.write.csv(out_path + '/unique-peptides-per-proteins-stats-' + current_time + '_tsv', sep="\t", header=True, mode='append')
 
-  df_organisms.write.json(out_path + '/organisms-stats-' + current_time, mode='append', compression='gzip',
-                          ignoreNullFields=False)
-  df_peptides_per_proteins.write.json(out_path + '/peptides-per-proteins-stats-' + current_time,
-                                      mode='append', compression='gzip', ignoreNullFields=False)
-  df_unique_peptides_per_proteins.write.json(out_path + '/unique-peptides-per-proteins-stats-' + current_time,
-                                             mode='append', compression='gzip', ignoreNullFields=False)
+  # df_organisms.write.json(out_path + '/organisms-stats-' + current_time, mode='append', compression='gzip',
+  #                         ignoreNullFields=False)
+  # df_peptides_per_proteins.write.json(out_path + '/peptides-per-proteins-stats-' + current_time,
+  #                                     mode='append', compression='gzip', ignoreNullFields=False)
+  # df_unique_peptides_per_proteins.write.json(out_path + '/unique-peptides-per-proteins-stats-' + current_time,
+  #                                            mode='append', compression='gzip', ignoreNullFields=False)
 
 
 if __name__ == '__main__':

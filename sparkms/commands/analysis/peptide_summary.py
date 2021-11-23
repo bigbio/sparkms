@@ -157,7 +157,7 @@ def hyper_score_validation(hyper_score, fdrscore):
 @click.option('-pep', help="Input peptide parquet files. ie., /path/to/", required=True)
 @click.option('--uniprot-map', help="uniprot mapping parquet files. ie., /path/to/", required=True)
 @click.option('--single-protein-map', help="single-protein mapping parquet files. ie., /path/to/", required=True)
-@click.option('--min-aa', help="Filter the minimum amino acids for each peptide to be consider (default=7)", default=7,
+@click.option('--min-aa', help="Filter the minimum amino acids for each peptide to be consider (default=7)", default=8,
               required=False)
 @click.option('--min-fdr-score', help="Minimum FDR score (default=0.0)", default=0.0, required=False)
 @click.option('--max-fdr-score', help='Maximum FDR Score default=0.01', default=0.01, required=False)
